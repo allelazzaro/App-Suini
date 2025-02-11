@@ -12,6 +12,19 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
+// Registrazione del Service Worker per la PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('Service Worker registrato con successo:', registration);
+      })
+      .catch(error => {
+        console.error('Registrazione Service Worker fallita:', error);
+      });
+  });
+}
+
 // Elementi per login/registrazione
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
@@ -21,7 +34,7 @@ const showRegisterBtn = document.getElementById('showRegister');
 const showLoginBtn = document.getElementById('showLogin');
 const logoutBtn = document.getElementById('logoutBtn');
 
-// Eventi per mostrare/nascondere form
+// Mostra/nascondi form
 showRegisterBtn.addEventListener('click', () => {
   loginForm.style.display = 'none';
   registerForm.style.display = 'block';
@@ -72,7 +85,7 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-// Calcoli automatici
+// Calcoli automatici nella form
 function updateFormCalculations() {
   const totalWeight = parseFloat(document.getElementById('totalWeight').value);
   const numHeads = parseFloat(document.getElementById('numHeads').value);
@@ -81,20 +94,16 @@ function updateFormCalculations() {
   const deadPercentInput = document.getElementById('deadPercent');
   if (!isNaN(totalWeight) && !isNaN(numHeads) && numHeads !== 0) {
     avgWeightInput.value = (totalWeight / numHeads).toFixed(2);
-  } else {
-    avgWeightInput.value = '';
-  }
+  } else { avgWeightInput.value = ''; }
   if (!isNaN(numHeads) && numHeads !== 0 && !isNaN(numDead)) {
     deadPercentInput.value = ((numDead / numHeads) * 100).toFixed(2);
-  } else {
-    deadPercentInput.value = '';
-  }
+  } else { deadPercentInput.value = ''; }
 }
 document.getElementById('totalWeight').addEventListener('input', updateFormCalculations);
 document.getElementById('numHeads').addEventListener('input', updateFormCalculations);
 document.getElementById('numDead').addEventListener('input', updateFormCalculations);
 
-// Pulsante fotocamera nel form (già esistente)
+// Pulsante fotocamera nel form
 document.getElementById('cameraBtn').addEventListener('click', () => {
   document.getElementById('photoInput').click();
 });
@@ -136,7 +145,7 @@ lotForm.addEventListener('submit', async (e) => {
   }
 });
 
-// Caricamento dei lotti
+// Caricamento dei lotti e applicazione dei filtri
 function loadLotti(user) {
   let lottiQuery = query(collection(db, "lotti"), orderBy("timestamp", "desc"));
   getDoc(doc(db, "users", user.uid)).then(docSnap => {
@@ -168,9 +177,7 @@ function loadLotti(user) {
           </td>
         `;
         // Edit
-        row.querySelector('.edit-btn').addEventListener('click', () => {
-          editRow(row, currentDocId);
-        });
+        row.querySelector('.edit-btn').addEventListener('click', () => { editRow(row, currentDocId); });
         // Delete
         row.querySelector('.delete-btn').addEventListener('click', () => {
           if (confirm("Sei sicuro di voler cancellare questo record?")) {
@@ -193,9 +200,9 @@ function loadLotti(user) {
               const storageRef = ref(storage, `lotti/${currentDocId}/photo.jpg`);
               try {
                 const snapshot = await uploadBytes(storageRef, file);
-                console.log("UploadBytes completato:", snapshot);
+                console.log("Upload completato:", snapshot);
                 const url = await getDownloadURL(snapshot.ref);
-                console.log("Download URL ottenuto:", url);
+                console.log("URL ottenuto:", url);
                 await updateDoc(doc(db, "lotti", currentDocId), { photoURL: url });
                 alert("Foto salvata con successo!");
               } catch (error) {
@@ -219,6 +226,7 @@ function loadLotti(user) {
         lotTableBody.appendChild(row);
       });
       updateTotals();
+      applyFilters(); // Applica i filtri ad ogni aggiornamento
     });
   });
 }
@@ -312,7 +320,6 @@ function editRow(row, docId) {
           .catch(error => { alert("Errore durante la cancellazione: " + error.message); });
       }
     });
-    // Riassocia i listener per le foto
     cells[9].querySelector('.photo-btn').addEventListener('click', () => {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
@@ -348,4 +355,32 @@ function editRow(row, docId) {
       });
     });
   });
+}
+
+/* Funzione per i filtri */
+const filterInputs = document.querySelectorAll('.filter-input');
+filterInputs.forEach(input => {
+  input.addEventListener('input', applyFilters);
+});
+
+function applyFilters() {
+  const table = document.getElementById("lotTable");
+  const tbody = table.tBodies[0];
+  const rows = tbody.getElementsByTagName("tr");
+  const filters = Array.from(filterInputs).map(input => input.value.toLowerCase().trim());
+  
+  for (let i = 0; i < rows.length; i++) {
+    const cells = rows[i].getElementsByTagName("td");
+    let rowVisible = true;
+    for (let j = 0; j < filters.length; j++) {
+      if (filters[j] !== "" && cells[j]) {
+        const cellText = cells[j].textContent.toLowerCase();
+        if (cellText.indexOf(filters[j]) === -1) {
+          rowVisible = false;
+          break;
+        }
+      }
+    }
+    rows[i].style.display = rowVisible ? "" : "none";
+  }
 }

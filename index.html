@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Soccide Progeo</title>
+  <!-- Collega il Manifest per la PWA -->
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Sezione Login/Registrazione (visibile se non loggato) -->
+  <!-- Sezione Login/Registrazione -->
   <div id="login-container">
     <h1>Accedi a Soccide Progeo</h1>
     <form id="loginForm">
@@ -24,7 +26,7 @@
     </form>
   </div>
 
-  <!-- Sezione App (visibile se l'utente è loggato) -->
+  <!-- Sezione App -->
   <div id="app-container" style="display: none;">
     <header>
       <h1>Soccide Progeo</h1>
@@ -62,7 +64,7 @@
           <label for="numDead">N.° Morti:</label>
           <div class="num-dead-wrapper">
             <input type="number" id="numDead" name="numDead" required>
-            <!-- Icona per aprire la fotocamera nel form -->
+            <!-- Pulsante per aprire la fotocamera nel form -->
             <button type="button" id="cameraBtn" class="camera-btn">📷</button>
             <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
           </div>
@@ -83,7 +85,7 @@
           <button type="submit">Conferma Dati</button>
         </div>
       </form>
-      <!-- Tabella dei lotti -->
+      <!-- Tabella dei lotti con riga dei filtri -->
       <table id="lotTable">
         <thead>
           <tr>
@@ -130,7 +132,6 @@
     </section>
   </div>
 
-  <!-- Includi lo script principale come modulo -->
   <script type="module" src="script.js"></script>
 </body>
 </html>

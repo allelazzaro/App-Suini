@@ -106,7 +106,7 @@ thead {
   font-size: 0.8em;
 }
 
-/* Responsive per schermi piccoli */
+/* Responsive per dispositivi mobili */
 @media (max-width: 600px) {
   body { font-size: 0.9em; }
   header { padding: 10px; }

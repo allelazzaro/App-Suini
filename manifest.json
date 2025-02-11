@@ -1,0 +1,20 @@
+{
+  "name": "Soccide Progeo",
+  "short_name": "Soccide",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d35400",
+  "icons": [
+    {
+      "src": "piggy-bank_115176.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "piggy-bank_115176.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
