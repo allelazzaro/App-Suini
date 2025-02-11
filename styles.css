@@ -14,12 +14,12 @@ header {
   text-align: center;
 }
 
-main, #app-container, #login-container {
+#app-container, #login-container {
   padding: 10px;
   max-width: 100%;
 }
 
-/* Form e Tabelle a larghezza completa per dispositivi mobili */
+/* Form e Tabelle a larghezza completa */
 form, table {
   width: 100%;
   box-sizing: border-box;
@@ -106,7 +106,7 @@ thead {
   font-size: 0.8em;
 }
 
-/* Responsive: per schermi piccoli, riduci i padding e i font-size */
+/* Responsive per schermi piccoli */
 @media (max-width: 600px) {
   body { font-size: 0.9em; }
   header { padding: 10px; }
