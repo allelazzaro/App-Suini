@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Soccide Progeo</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- Non includere qui gli script Firebase in modalità module, verranno importati in firebase-config.js -->
 </head>
 <body>
-  <!-- Sezione Login/Registrazione (visibile se l'utente non è loggato) -->
+  <!-- Sezione Login/Registrazione (visibile se non loggato) -->
   <div id="login-container">
     <h1>Accedi a Soccide Progeo</h1>
     <form id="loginForm">
@@ -40,7 +39,7 @@
             <option value="">-- Seleziona Cliente --</option>
             <option value="C690818">C690818 - PROGEO SOCCIDA ALBERTI CLAUDIO</option>
             <option value="C305566">C305566 - PROGEO SOCCIDA BENTINI SIMONE</option>
-            <!-- Aggiungi qui le altre opzioni -->
+            <!-- Inserisci qui le altre opzioni -->
           </select>
         </div>
         <div class="form-group">
@@ -84,7 +83,7 @@
           <button type="submit">Conferma Dati</button>
         </div>
       </form>
-      <!-- Tabella con filtri ed eventuali azioni (come editing) -->
+      <!-- Tabella con i dati inseriti -->
       <table id="lotTable">
         <thead>
           <tr>
@@ -113,7 +112,7 @@
           </tr>
         </thead>
         <tbody>
-          <!-- I dati dei lotti verranno caricati da Firestore -->
+          <!-- I dati verranno caricati da Firestore -->
         </tbody>
         <tfoot>
           <tr id="totalsRow">

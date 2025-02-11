@@ -1,5 +1,5 @@
 // script.js
-import { auth, db } from "./firebase-config.js";
+import { auth, db, storage } from "./firebase-config.js";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -8,8 +8,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { 
   collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, 
-  getDoc, doc, updateDoc 
+  getDoc, doc, updateDoc, deleteDoc 
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
 // Elementi per login/registrazione
 const loginContainer = document.getElementById('login-container');
@@ -26,8 +27,6 @@ showRegisterBtn.addEventListener('click', () => {
   loginForm.style.display = 'none';
   registerForm.style.display = 'block';
 });
-
-// Torna al login
 showLoginBtn.addEventListener('click', () => {
   registerForm.style.display = 'none';
   loginForm.style.display = 'block';
@@ -67,7 +66,7 @@ logoutBtn.addEventListener('click', () => {
   signOut(auth);
 });
 
-// Gestione dello stato di autenticazione
+// Ascolta lo stato di autenticazione e mostra la sezione appropriata
 onAuthStateChanged(auth, user => {
   if (user) {
     loginContainer.style.display = 'none';
@@ -101,12 +100,12 @@ document.getElementById('totalWeight').addEventListener('input', updateFormCalcu
 document.getElementById('numHeads').addEventListener('input', updateFormCalculations);
 document.getElementById('numDead').addEventListener('input', updateFormCalculations);
 
-// Gestione pulsante fotocamera: apre il file input per scattare una foto sui dispositivi mobili
+// Gestione pulsante fotocamera nel form (già esistente)
 document.getElementById('cameraBtn').addEventListener('click', () => {
   document.getElementById('photoInput').click();
 });
 
-// Salva un nuovo lotto in Firestore
+// Salva un nuovo lotto in Firestore (aggiungiamo photoURL: "")
 const lotForm = document.getElementById('lotForm');
 lotForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -131,6 +130,7 @@ lotForm.addEventListener('submit', async (e) => {
     deadPercent: parseFloat(deadPercent),
     sector,
     avgWeight: parseFloat(avgWeight),
+    photoURL: "",  // inizialmente vuoto
     uid: auth.currentUser.uid,
     timestamp: serverTimestamp()
   };
@@ -155,8 +155,9 @@ function loadLotti(user) {
     onSnapshot(lottiQuery, (snapshot) => {
       const lotTableBody = document.querySelector('#lotTable tbody');
       lotTableBody.innerHTML = "";
-      snapshot.forEach(doc => {
-        const data = doc.data();
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const currentDocId = docSnap.id;
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${data.client}</td>
@@ -168,10 +169,59 @@ function loadLotti(user) {
           <td>${data.deadPercent.toFixed(2)}</td>
           <td>${data.sector}</td>
           <td>${data.avgWeight.toFixed(2)}</td>
-          <td><button class="edit-btn">Edit</button></td>
+          <td>
+            <button class="edit-btn">Edit</button>
+            <button class="delete-btn">Delete</button>
+            <button class="photo-btn">📷</button>
+            <button class="view-photo-btn">👁</button>
+          </td>
         `;
+        // Edit
         row.querySelector('.edit-btn').addEventListener('click', () => {
-          editRow(row, doc.id);
+          editRow(row, currentDocId);
+        });
+        // Delete
+        row.querySelector('.delete-btn').addEventListener('click', () => {
+          if (confirm("Sei sicuro di voler cancellare questo record?")) {
+            deleteDoc(doc(db, "lotti", currentDocId))
+              .then(() => { alert("Record cancellato."); })
+              .catch(error => { alert("Errore durante la cancellazione: " + error.message); });
+          }
+        });
+        // Photo: per catturare la foto e salvarla
+        row.querySelector('.photo-btn').addEventListener('click', () => {
+          // Crea dinamicamente un input file
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = 'image/*';
+          fileInput.capture = 'environment';
+          fileInput.style.display = 'none';
+          fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const storageRef = ref(storage, `lotti/${currentDocId}/photo.jpg`);
+              try {
+                const snapshot = await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+                // Aggiorna il record con il link della foto
+                await updateDoc(doc(db, "lotti", currentDocId), { photoURL: url });
+                alert("Foto salvata con successo!");
+              } catch (error) {
+                alert("Errore durante l'upload della foto: " + error.message);
+              }
+            }
+          });
+          document.body.appendChild(fileInput);
+          fileInput.click();
+          fileInput.remove();
+        });
+        // View Photo: apre la foto in una nuova finestra se disponibile
+        row.querySelector('.view-photo-btn').addEventListener('click', () => {
+          if (data.photoURL) {
+            window.open(data.photoURL, '_blank');
+          } else {
+            alert("Nessuna foto disponibile per questo record.");
+          }
         });
         lotTableBody.appendChild(row);
       });
@@ -180,7 +230,7 @@ function loadLotti(user) {
   });
 }
 
-// Aggiorna i totali sommando i valori delle righe visibili nella tabella
+// Aggiorna i totali sommando i valori delle righe visibili
 function updateTotals() {
   let totalWeightSum = 0, totalHeadsSum = 0, totalDeadSum = 0;
   const rows = document.querySelectorAll('#lotTable tbody tr');
@@ -200,11 +250,10 @@ function updateTotals() {
   document.getElementById('totalAvgWeight').textContent = totAvgWeight;
 }
 
-/* Esempio di implementazione di editRow.
-   Questa funzione trasforma le celle della riga in input per consentire l'editing e aggiunge pulsanti "Save" e "Cancel". */
+/* Funzione di editing: trasforma la riga in modalità modifica.
+   Sostituisce i campi editabili con input e fornisce pulsanti Save e Cancel. */
 function editRow(row, docId) {
   const cells = row.querySelectorAll('td');
-  // Salva i valori originali per poter annullare le modifiche
   const originalValues = {
     client: cells[0].textContent,
     lotNumber: cells[1].textContent,
@@ -215,7 +264,6 @@ function editRow(row, docId) {
     sector: cells[7].textContent
   };
 
-  // Sostituisci le celle con input (modifichiamo solo i campi editabili)
   cells[0].innerHTML = `<input type="text" value="${originalValues.client}">`;
   cells[1].innerHTML = `<input type="text" value="${originalValues.lotNumber}">`;
   cells[2].innerHTML = `<input type="date" value="${originalValues.entryDate}">`;
@@ -224,11 +272,7 @@ function editRow(row, docId) {
   cells[5].innerHTML = `<input type="number" value="${originalValues.numDead}">`;
   cells[7].innerHTML = `<input type="text" value="${originalValues.sector}">`;
 
-  // I campi computati verranno ricalcolati al salvataggio
-  // Sostituisci la cella delle azioni con i pulsanti "Save" e "Cancel"
   cells[9].innerHTML = `<button class="save-btn">Save</button> <button class="cancel-btn">Cancel</button>`;
-
-  // Aggiungi evento al pulsante Save per aggiornare i dati su Firestore
   cells[9].querySelector('.save-btn').addEventListener('click', () => {
     const updatedClient = cells[0].querySelector('input').value;
     const updatedLotNumber = cells[1].querySelector('input').value;
@@ -252,18 +296,11 @@ function editRow(row, docId) {
       deadPercent: parseFloat(updatedDeadPercent)
     };
 
-    // Aggiorna il documento su Firestore
     updateDoc(doc(db, "lotti", docId), updatedData)
-      .then(() => {
-        alert("Record aggiornato!");
-        // Una volta aggiornato, il listener onSnapshot aggiornerà automaticamente la tabella.
-      })
-      .catch(error => {
-        alert("Errore durante l'aggiornamento: " + error.message);
-      });
+      .then(() => { alert("Record aggiornato!"); })
+      .catch(error => { alert("Errore durante l'aggiornamento: " + error.message); });
   });
 
-  // Evento Cancel: ripristina i valori originali
   cells[9].querySelector('.cancel-btn').addEventListener('click', () => {
     cells[0].textContent = originalValues.client;
     cells[1].textContent = originalValues.lotNumber;
@@ -271,7 +308,6 @@ function editRow(row, docId) {
     cells[3].textContent = originalValues.totalWeight;
     cells[4].textContent = originalValues.numHeads;
     cells[5].textContent = originalValues.numDead;
-    // Ricalcola i campi computati basandosi sui valori originali
     const origTotalWeight = parseFloat(originalValues.totalWeight);
     const origNumHeads = parseInt(originalValues.numHeads);
     const origAvgWeight = origNumHeads ? (origTotalWeight / origNumHeads).toFixed(2) : "0.00";
@@ -280,9 +316,50 @@ function editRow(row, docId) {
     cells[6].textContent = origDeadPercent;
     cells[7].textContent = originalValues.sector;
     cells[8].textContent = origAvgWeight;
-    cells[9].innerHTML = `<button class="edit-btn">Edit</button>`;
-    cells[9].querySelector('.edit-btn').addEventListener('click', () => {
-      editRow(row, docId);
+    cells[9].innerHTML = `<button class="edit-btn">Edit</button> <button class="delete-btn">Delete</button> <button class="photo-btn">📷</button> <button class="view-photo-btn">👁</button>`;
+    cells[9].querySelector('.edit-btn').addEventListener('click', () => { editRow(row, docId); });
+    cells[9].querySelector('.delete-btn').addEventListener('click', () => {
+      if (confirm("Sei sicuro di voler cancellare questo record?")) {
+        deleteDoc(doc(db, "lotti", docId))
+          .then(() => { alert("Record cancellato."); })
+          .catch(error => { alert("Errore durante la cancellazione: " + error.message); });
+      }
+    });
+    cells[9].querySelector('.photo-btn').addEventListener('click', () => {
+      // Funzionalità simile a quella definita in loadLotti per il pulsante foto
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.capture = 'environment';
+      fileInput.style.display = 'none';
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const storageRef = ref(storage, `lotti/${docId}/photo.jpg`);
+          try {
+            const snapshot = await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(snapshot.ref);
+            await updateDoc(doc(db, "lotti", docId), { photoURL: url });
+            alert("Foto salvata con successo!");
+          } catch (error) {
+            alert("Errore durante l'upload della foto: " + error.message);
+          }
+        }
+      });
+      document.body.appendChild(fileInput);
+      fileInput.click();
+      fileInput.remove();
+    });
+    cells[9].querySelector('.view-photo-btn').addEventListener('click', () => {
+      // Per il pulsante View, se nel record c'è già una foto, apri il link
+      getDoc(doc(db, "lotti", docId)).then(docSnap => {
+        const recordData = docSnap.data();
+        if (recordData.photoURL) {
+          window.open(recordData.photoURL, '_blank');
+        } else {
+          alert("Nessuna foto disponibile per questo record.");
+        }
+      });
     });
   });
 }
