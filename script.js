@@ -144,13 +144,11 @@ lotForm.addEventListener('submit', async (e) => {
 const modal = document.getElementById("photoModal");
 const modalImg = document.getElementById("modalImage");
 const spanClose = document.getElementsByClassName("close")[0];
-// Chiusura del modal
 spanClose.onclick = function() {
   modal.style.display = "none";
 };
-
-// Funzione per mostrare il modal con la foto
 function showModal(photoURL) {
+  console.log("Mostro il modal con URL:", photoURL);
   modalImg.src = photoURL;
   modal.style.display = "block";
 }
@@ -225,7 +223,7 @@ function loadLotti(user) {
           fileInput.click();
           fileInput.remove();
         });
-        // View Photo: Se esiste una foto, la visualizza nel modal
+        // View Photo: Visualizza la foto nel modal, se disponibile
         row.querySelector('.view-photo-btn').addEventListener('click', () => {
           if (data.photoURL && data.photoURL.trim() !== "") {
             showModal(data.photoURL);
@@ -236,7 +234,7 @@ function loadLotti(user) {
         lotTableBody.appendChild(row);
       });
       updateTotals();
-      applyFilters(); // Applica i filtri ad ogni aggiornamento
+      applyFilters();
     });
   });
 }
@@ -355,7 +353,6 @@ function editRow(row, docId) {
       fileInput.remove();
     });
     cells[9].querySelector('.view-photo-btn').addEventListener('click', () => {
-      // Utilizza la funzione showModal per visualizzare la foto in un modal
       getDoc(doc(db, "lotti", docId)).then(docSnap => {
         const recordData = docSnap.data();
         if (recordData.photoURL && recordData.photoURL.trim() !== "") {
