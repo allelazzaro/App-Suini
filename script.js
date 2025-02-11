@@ -103,12 +103,7 @@ document.getElementById('totalWeight').addEventListener('input', updateFormCalcu
 document.getElementById('numHeads').addEventListener('input', updateFormCalculations);
 document.getElementById('numDead').addEventListener('input', updateFormCalculations);
 
-// Pulsante fotocamera nel form
-document.getElementById('cameraBtn').addEventListener('click', () => {
-  document.getElementById('photoInput').click();
-});
-
-// Salvataggio di un nuovo lotto (inizialmente senza foto)
+// Salvataggio di un nuovo lotto (senza foto inizialmente)
 const lotForm = document.getElementById('lotForm');
 lotForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -132,7 +127,7 @@ lotForm.addEventListener('submit', async (e) => {
     deadPercent: parseFloat(deadPercent),
     sector,
     avgWeight: parseFloat(avgWeight),
-    photoURL: "", // inizialmente vuoto
+    photoURL: "",
     uid: auth.currentUser.uid,
     timestamp: serverTimestamp()
   };
@@ -144,6 +139,21 @@ lotForm.addEventListener('submit', async (e) => {
     alert("Errore nel salvataggio: " + error.message);
   }
 });
+
+// Modal per visualizzare le foto
+const modal = document.getElementById("photoModal");
+const modalImg = document.getElementById("modalImage");
+const spanClose = document.getElementsByClassName("close")[0];
+// Chiusura del modal
+spanClose.onclick = function() {
+  modal.style.display = "none";
+};
+
+// Funzione per mostrare il modal con la foto
+function showModal(photoURL) {
+  modalImg.src = photoURL;
+  modal.style.display = "block";
+}
 
 // Caricamento dei lotti e applicazione dei filtri
 function loadLotti(user) {
@@ -215,10 +225,10 @@ function loadLotti(user) {
           fileInput.click();
           fileInput.remove();
         });
-        // View Photo: Visualizza la foto se disponibile
+        // View Photo: Se esiste una foto, la visualizza nel modal
         row.querySelector('.view-photo-btn').addEventListener('click', () => {
           if (data.photoURL && data.photoURL.trim() !== "") {
-            window.open(data.photoURL, '_blank');
+            showModal(data.photoURL);
           } else {
             alert("Nessuna foto disponibile per questo record.");
           }
@@ -345,10 +355,11 @@ function editRow(row, docId) {
       fileInput.remove();
     });
     cells[9].querySelector('.view-photo-btn').addEventListener('click', () => {
+      // Utilizza la funzione showModal per visualizzare la foto in un modal
       getDoc(doc(db, "lotti", docId)).then(docSnap => {
         const recordData = docSnap.data();
         if (recordData.photoURL && recordData.photoURL.trim() !== "") {
-          window.open(recordData.photoURL, '_blank');
+          showModal(recordData.photoURL);
         } else {
           alert("Nessuna foto disponibile per questo record.");
         }

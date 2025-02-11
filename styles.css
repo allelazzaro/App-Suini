@@ -19,13 +19,11 @@ header {
   max-width: 100%;
 }
 
-/* Form e Tabelle a larghezza completa */
 form, table {
   width: 100%;
   box-sizing: border-box;
 }
 
-/* Stili per i form */
 form {
   background-color: white;
   padding: 15px;
@@ -71,7 +69,6 @@ button:hover {
   background-color: #e67e22;
 }
 
-/* Stile specifico per l'icona della fotocamera */
 .camera-btn {
   background: none;
   border: none;
@@ -80,7 +77,6 @@ button:hover {
   cursor: pointer;
 }
 
-/* Tabella */
 table {
   border-collapse: collapse;
   background-color: white;
@@ -104,6 +100,34 @@ thead {
   width: 90%;
   padding: 4px;
   font-size: 0.8em;
+}
+
+/* Modal styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.9);
+  padding-top: 60px;
+}
+.modal-content {
+  margin: auto;
+  display: block;
+  max-width: 80%;
+}
+.close {
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 /* Responsive per dispositivi mobili */

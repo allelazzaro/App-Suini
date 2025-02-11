@@ -64,9 +64,6 @@
           <label for="numDead">N.° Morti:</label>
           <div class="num-dead-wrapper">
             <input type="number" id="numDead" name="numDead" required>
-            <!-- Pulsante per aprire la fotocamera nel form -->
-            <button type="button" id="cameraBtn" class="camera-btn">📷</button>
-            <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
           </div>
         </div>
         <div class="form-group">
@@ -85,7 +82,7 @@
           <button type="submit">Conferma Dati</button>
         </div>
       </form>
-      <!-- Tabella dei lotti con riga dei filtri -->
+      <!-- Tabella dei lotti con filtri -->
       <table id="lotTable">
         <thead>
           <tr>
@@ -130,6 +127,12 @@
         </tfoot>
       </table>
     </section>
+  </div>
+
+  <!-- Modal per la visualizzazione delle foto -->
+  <div id="photoModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
   </div>
 
   <script type="module" src="script.js"></script>
