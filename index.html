@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soccide Progeo</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Non includere qui gli script Firebase in modalità module, verranno importati in firebase-config.js -->
+</head>
+<body>
+  <!-- Sezione Login/Registrazione (visibile se l'utente non è loggato) -->
+  <div id="login-container">
+    <h1>Accedi a Soccide Progeo</h1>
+    <form id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Email" required>
+      <input type="password" id="loginPassword" placeholder="Password" required>
+      <button type="submit">Login</button>
+      <button type="button" id="showRegister">Registrati</button>
+    </form>
+    <form id="registerForm" style="display: none;">
+      <input type="email" id="registerEmail" placeholder="Email" required>
+      <input type="password" id="registerPassword" placeholder="Password (min. 6 caratteri)" required>
+      <button type="submit">Registrati</button>
+      <button type="button" id="showLogin">Torna al Login</button>
+    </form>
+  </div>
+
+  <!-- Sezione App (visibile se l'utente è loggato) -->
+  <div id="app-container" style="display: none;">
+    <header>
+      <h1>Soccide Progeo</h1>
+      <button id="logoutBtn">Logout</button>
+    </header>
+    <section id="lot-section">
+      <h2>Gestione Lotto</h2>
+      <form id="lotForm">
+        <div class="form-group">
+          <label for="clientSelect">Cliente:</label>
+          <select id="clientSelect" name="clientSelect" required>
+            <option value="">-- Seleziona Cliente --</option>
+            <option value="C690818">C690818 - PROGEO SOCCIDA ALBERTI CLAUDIO</option>
+            <option value="C305566">C305566 - PROGEO SOCCIDA BENTINI SIMONE</option>
+            <!-- Aggiungi qui le altre opzioni -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="lotNumber">N.° Lotto:</label>
+          <input type="text" id="lotNumber" name="lotNumber" required>
+        </div>
+        <div class="form-group">
+          <label for="entryDate">Data Ingresso:</label>
+          <input type="date" id="entryDate" name="entryDate" required>
+        </div>
+        <div class="form-group">
+          <label for="totalWeight">Peso Totale (kg):</label>
+          <input type="number" id="totalWeight" name="totalWeight" step="0.1" required>
+        </div>
+        <div class="form-group">
+          <label for="numHeads">N.° Capi:</label>
+          <input type="number" id="numHeads" name="numHeads" required>
+        </div>
+        <div class="form-group">
+          <label for="numDead">N.° Morti:</label>
+          <div class="num-dead-wrapper">
+            <input type="number" id="numDead" name="numDead" required>
+            <!-- Icona per aprire la fotocamera -->
+            <button type="button" id="cameraBtn" class="camera-btn">📷</button>
+            <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="deadPercent">Percentuale Morti (%):</label>
+          <input type="number" id="deadPercent" name="deadPercent" step="0.1" readonly>
+        </div>
+        <div class="form-group">
+          <label for="sector">Settore:</label>
+          <input type="text" id="sector" name="sector" required>
+        </div>
+        <div class="form-group">
+          <label for="avgWeight">Peso Medio per Capo (kg):</label>
+          <input type="number" id="avgWeight" name="avgWeight" step="0.1" readonly>
+        </div>
+        <div class="form-group">
+          <button type="submit">Conferma Dati</button>
+        </div>
+      </form>
+      <!-- Tabella con filtri ed eventuali azioni (come editing) -->
+      <table id="lotTable">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>N.° Lotto</th>
+            <th>Data Ingresso</th>
+            <th>Peso Totale (kg)</th>
+            <th>N.° Capi</th>
+            <th>N.° Morti</th>
+            <th>% Morti</th>
+            <th>Settore</th>
+            <th>Peso Medio per Capo (kg)</th>
+            <th>Azioni</th>
+          </tr>
+          <tr class="filter-row">
+            <th><input type="text" class="filter-input" data-column="0" placeholder="Filtra Cliente"></th>
+            <th><input type="text" class="filter-input" data-column="1" placeholder="Filtra Lotto"></th>
+            <th><input type="text" class="filter-input" data-column="2" placeholder="Filtra Data"></th>
+            <th><input type="text" class="filter-input" data-column="3" placeholder="Filtra Peso Totale"></th>
+            <th><input type="text" class="filter-input" data-column="4" placeholder="Filtra Capi"></th>
+            <th><input type="text" class="filter-input" data-column="5" placeholder="Filtra Morti"></th>
+            <th><input type="text" class="filter-input" data-column="6" placeholder="Filtra % Morti"></th>
+            <th><input type="text" class="filter-input" data-column="7" placeholder="Filtra Settore"></th>
+            <th><input type="text" class="filter-input" data-column="8" placeholder="Filtra Peso Medio"></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- I dati dei lotti verranno caricati da Firestore -->
+        </tbody>
+        <tfoot>
+          <tr id="totalsRow">
+            <td colspan="3">Totale</td>
+            <td id="totalWeightTotal"></td>
+            <td id="totalHeadsTotal"></td>
+            <td id="totalDeadTotal"></td>
+            <td id="totalDeadPercent"></td>
+            <td></td>
+            <td id="totalAvgWeight"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+  </div>
+
+  <!-- Includi lo script principale come modulo -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
