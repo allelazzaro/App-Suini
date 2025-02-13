@@ -15,14 +15,14 @@
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="Email" required>
       <input type="password" id="loginPassword" placeholder="Password" required>
-      <button type="submit">Login</button>
+      <button type="submit">Accedi</button>
       <button type="button" id="showRegister">Registrati</button>
     </form>
     <form id="registerForm" style="display: none;">
       <input type="email" id="registerEmail" placeholder="Email" required>
       <input type="password" id="registerPassword" placeholder="Password (min. 6 caratteri)" required>
       <button type="submit">Registrati</button>
-      <button type="button" id="showLogin">Torna al Login</button>
+      <button type="button" id="showLogin">Torna al login</button>
     </form>
   </div>
 
@@ -35,10 +35,11 @@
     <section id="lot-section">
       <h2>Gestione Lotto</h2>
       <form id="lotForm">
+        <!-- Form per l'inserimento dei dati -->
         <div class="form-group">
           <label for="clientSelect">Cliente:</label>
           <select id="clientSelect" name="clientSelect" required>
-            <option value="">-- Seleziona Cliente --</option>
+            <option value="">-- Seleziona cliente --</option>
             <option value="C690818">C690818 - PROGEO SOCCIDA ALBERTI CLAUDIO</option>
             <option value="C305566">C305566 - PROGEO SOCCIDA BENTINI SIMONE</option>
             <!-- Altre opzioni -->
@@ -49,25 +50,27 @@
           <input type="text" id="lotNumber" name="lotNumber" required>
         </div>
         <div class="form-group">
-          <label for="entryDate">Data Ingresso:</label>
+          <label for="entryDate">Data ingresso:</label>
           <input type="date" id="entryDate" name="entryDate" required>
         </div>
         <div class="form-group">
-          <label for="totalWeight">Peso Totale (kg):</label>
+          <label for="presuntoCarico">Data presunto carico:</label>
+          <input type="date" id="presuntoCarico" name="presuntoCarico" required>
+        </div>
+        <div class="form-group">
+          <label for="totalWeight">Peso totale (kg):</label>
           <input type="number" id="totalWeight" name="totalWeight" step="0.1" required>
         </div>
         <div class="form-group">
-          <label for="numHeads">N.° Capi:</label>
+          <label for="numHeads">N.° capi:</label>
           <input type="number" id="numHeads" name="numHeads" required>
         </div>
         <div class="form-group">
-          <label for="numDead">N.° Morti:</label>
-          <div class="num-dead-wrapper">
-            <input type="number" id="numDead" name="numDead" required>
-          </div>
+          <label for="numDead">N.° morti:</label>
+          <input type="number" id="numDead" name="numDead" required>
         </div>
         <div class="form-group">
-          <label for="deadPercent">Percentuale Morti (%):</label>
+          <label for="deadPercent">Percentuale morti (%):</label>
           <input type="number" id="deadPercent" name="deadPercent" step="0.1" readonly>
         </div>
         <div class="form-group">
@@ -75,38 +78,57 @@
           <input type="text" id="sector" name="sector" required>
         </div>
         <div class="form-group">
-          <label for="avgWeight">Peso Medio per Capo (kg):</label>
+          <label for="lettera">Lettera:</label>
+          <input type="text" id="lettera" name="lettera" required>
+        </div>
+        <div class="form-group">
+          <label for="avgWeight">Peso medio per capo (kg):</label>
           <input type="number" id="avgWeight" name="avgWeight" step="0.1" readonly>
         </div>
         <div class="form-group">
-          <button type="submit">Conferma Dati</button>
+          <button type="submit">Conferma dati</button>
         </div>
       </form>
-      <!-- Tabella dei lotti con filtri -->
+      
+      <!-- Tabella dei lotti con filtri e riga dei totali -->
       <table id="lotTable">
         <thead>
           <tr>
             <th>Cliente</th>
             <th>N.° Lotto</th>
-            <th>Data Ingresso</th>
-            <th>Peso Totale (kg)</th>
-            <th>N.° Capi</th>
-            <th>N.° Morti</th>
-            <th>% Morti</th>
+            <th>Data ingresso</th>
+            <th>Data presunto carico</th>
+            <th>Peso totale (kg)</th>
+            <th>N.° capi</th>
+            <th>N.° morti</th>
+            <th>% morti</th>
             <th>Settore</th>
-            <th>Peso Medio per Capo (kg)</th>
+            <th>Lettera</th>
+            <th>Peso medio (kg)</th>
+            <th>Animali caricati</th>
+            <th>Peso totale carico (kg)</th>
+            <th>Peso/capo carico (kg)</th>
+            <th>Scarti</th>
+            <th>Presenti</th>
             <th>Azioni</th>
           </tr>
           <tr class="filter-row">
-            <th><input type="text" class="filter-input" data-column="0" placeholder="Filtra Cliente"></th>
-            <th><input type="text" class="filter-input" data-column="1" placeholder="Filtra Lotto"></th>
-            <th><input type="text" class="filter-input" data-column="2" placeholder="Filtra Data"></th>
-            <th><input type="text" class="filter-input" data-column="3" placeholder="Filtra Peso Totale"></th>
-            <th><input type="text" class="filter-input" data-column="4" placeholder="Filtra Capi"></th>
-            <th><input type="text" class="filter-input" data-column="5" placeholder="Filtra Morti"></th>
-            <th><input type="text" class="filter-input" data-column="6" placeholder="Filtra % Morti"></th>
-            <th><input type="text" class="filter-input" data-column="7" placeholder="Filtra Settore"></th>
-            <th><input type="text" class="filter-input" data-column="8" placeholder="Filtra Peso Medio"></th>
+            <th><input type="text" class="filter-input" data-column="0" placeholder="Filtra cliente"></th>
+            <th><input type="text" class="filter-input" data-column="1" placeholder="Filtra lotto"></th>
+            <th><input type="text" class="filter-input" data-column="2" placeholder="Filtra data ingresso"></th>
+            <th><input type="text" class="filter-input" data-column="3" placeholder="Filtra data carico"></th>
+            <th><input type="text" class="filter-input" data-column="4" placeholder="Filtra peso totale"></th>
+            <th><input type="text" class="filter-input" data-column="5" placeholder="Filtra capi"></th>
+            <th><input type="text" class="filter-input" data-column="6" placeholder="Filtra morti"></th>
+            <th><input type="text" class="filter-input" data-column="7" placeholder="Filtra % morti"></th>
+            <th><input type="text" class="filter-input" data-column="8" placeholder="Filtra settore"></th>
+            <th><input type="text" class="filter-input" data-column="9" placeholder="Filtra lettera"></th>
+            <th><input type="text" class="filter-input" data-column="10" placeholder="Filtra peso medio"></th>
+            <th><input type="text" class="filter-input" data-column="11" placeholder="Filtra animali caricati"></th>
+            <th><input type="text" class="filter-input" data-column="12" placeholder="Filtra peso totale carico"></th>
+            <th><input type="text" class="filter-input" data-column="13" placeholder="Filtra peso/capo"></th>
+            <th><input type="text" class="filter-input" data-column="14" placeholder="Filtra scarti"></th>
+            <th><input type="text" class="filter-input" data-column="15" placeholder="Filtra presenti"></th>
             <th></th>
           </tr>
         </thead>
@@ -115,13 +137,18 @@
         </tbody>
         <tfoot>
           <tr id="totalsRow">
-            <td colspan="3">Totale</td>
+            <td colspan="2">Totale</td>
+            <td colspan="2"></td>
             <td id="totalWeightTotal"></td>
             <td id="totalHeadsTotal"></td>
             <td id="totalDeadTotal"></td>
             <td id="totalDeadPercent"></td>
-            <td></td>
+            <td colspan="2"></td>
             <td id="totalAvgWeight"></td>
+            <td id="totalAnimalsLoaded"></td>
+            <td id="totalWeightCarico"></td>
+            <td id="totalAvgWeightCarico"></td>
+            <td id="totalScarti"></td>
             <td></td>
           </tr>
         </tfoot>

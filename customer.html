@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <!-- Viewport per dispositivi mobili -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dettagli Cliente</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Google Font per un look moderno -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* Font globale e reset base */
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #f4f4f4;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-size: 1.8em;
+      color: #d35400;
+    }
+    h2 {
+      font-size: 1.4em;
+      color: #f39c12;
+    }
+    /* Contenitore principale */
+    main#content {
+      max-width: 960px;
+      margin: 0 auto;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    /* Form principale */
+    .edit-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+      justify-content: center;
+    }
+    .edit-form label {
+      flex: 1 1 45%;
+      min-width: 150px;
+      display: flex;
+      flex-direction: column;
+      font-size: 0.9em;
+    }
+    .edit-form input {
+      padding: 6px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 3px;
+    }
+    /* Sezione Suinetti Venduti */
+    .sv-section {
+      margin-top: 30px;
+    }
+    .sv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .sv-table th,
+    .sv-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 0.9em;
+    }
+    .sv-table th {
+      background-color: #f39c12;
+      color: white;
+    }
+    .sv-table input {
+      width: 100%;
+      padding: 5px;
+      font-size: 0.9em;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    /* Form nuova riga "Suinetti Venduti" */
+    .new-sv-form {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+    .new-sv-form label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.9em;
+    }
+    .new-sv-form input {
+      padding: 6px;
+      font-size: 0.9em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .new-sv-form button {
+      padding: 8px 12px;
+      background-color: #d35400;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .new-sv-form button:hover {
+      background-color: #e67e22;
+    }
+    /* Pulsanti generici */
+    .btn {
+      padding: 8px 12px;
+      background-color: #d35400;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 0.9em;
+    }
+    .btn:hover {
+      background-color: #e67e22;
+    }
+    /* Responsive per smartphone */
+    @media (max-width: 600px) {
+      .edit-form label {
+        flex: 1 1 100%;
+      }
+      .new-sv-form {
+        flex-direction: column;
+      }
+      .new-sv-form label {
+        width: 100%;
+      }
+    }
+  </style>
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { 
+      doc, getDoc, updateDoc, collection, addDoc, onSnapshot, deleteDoc, query, orderBy 
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Funzione per formattare le date (gg/mm/aaaa)
+    function formatDate(dateString) {
+      if (!dateString) return "";
+      const [anno, mese, giorno] = dateString.split("-");
+      return `${giorno}/${mese}/${anno}`;
+    }
+
+    // Funzione per ricalcolare la percentuale di morti (campo readonly)
+    function recalcDeadPercent() {
+      const numHeads = parseInt(document.getElementById('numHeads').value);
+      const numDead = parseInt(document.getElementById('numDead').value);
+      const deadPercentInput = document.getElementById('deadPercent');
+      if (!isNaN(numHeads) && numHeads > 0 && !isNaN(numDead)) {
+        deadPercentInput.value = ((numDead / numHeads) * 100).toFixed(2);
+      } else {
+        deadPercentInput.value = "";
+      }
+    }
+
+    // Funzione di aggiornamento automatico del record principale
+    async function autoUpdate() {
+      const params = new URLSearchParams(window.location.search);
+      const docId = params.get('docId');
+      if (!docId) return;
+      const updatedData = {
+        client: document.getElementById('client').value,
+        lotNumber: document.getElementById('lotNumber').value,
+        entryDate: document.getElementById('entryDate').value,
+        presuntoCarico: document.getElementById('presuntoCarico').value,
+        totalWeight: parseFloat(document.getElementById('totalWeight').value) || 0,
+        numHeads: parseInt(document.getElementById('numHeads').value) || 0,
+        numDead: parseInt(document.getElementById('numDead').value) || 0,
+        deadPercent: parseFloat(document.getElementById('deadPercent').value) || 0,
+        sector: document.getElementById('sector').value,
+        lettera: document.getElementById('lettera').value,
+        avgWeight: parseFloat(document.getElementById('avgWeight').value) || 0,
+        animalsLoaded: parseInt(document.getElementById('animalsLoaded').value) || 0,
+        totalWeightCarico: parseFloat(document.getElementById('totalWeightCarico').value) || 0,
+        avgWeightCarico: parseFloat(document.getElementById('avgWeightCarico').value) || 0,
+        scarti: parseInt(document.getElementById('scarti').value) || 0,
+        present: parseInt(document.getElementById('present').value) || 0
+      };
+      try {
+        const recordRef = doc(db, "lotti", docId);
+        await updateDoc(recordRef, updatedData);
+        console.log("Record aggiornato automaticamente");
+      } catch (error) {
+        console.error("Errore durante l'aggiornamento automatico: " + error.message);
+      }
+    }
+
+    // Funzione per aggiornare automaticamente il "Peso/Capo carico" (media)
+    function updateAvgWeightCarico() {
+      const animalsLoaded = parseFloat(document.getElementById('animalsLoaded').value);
+      const totalWeightCarico = parseFloat(document.getElementById('totalWeightCarico').value);
+      const avgWeightCaricoInput = document.getElementById('avgWeightCarico');
+      if (!isNaN(animalsLoaded) && animalsLoaded > 0 && !isNaN(totalWeightCarico)) {
+        avgWeightCaricoInput.value = (totalWeightCarico / animalsLoaded).toFixed(2);
+      } else {
+        avgWeightCaricoInput.value = "";
+      }
+    }
+
+    // Funzione per aggiornare il campo "Ancora presenti" come: (N.° capi – Animali caricati) – (N.° morti + Scarti)
+    function updateAncoraPresenti() {
+      const numHeads = parseInt(document.getElementById('numHeads').value) || 0;
+      const animalsLoaded = parseInt(document.getElementById('animalsLoaded').value) || 0;
+      const numDead = parseInt(document.getElementById('numDead').value) || 0;
+      const scarti = parseInt(document.getElementById('scarti').value) || 0;
+      const ancoraPresentiInput = document.getElementById('present');
+      ancoraPresentiInput.value = (numHeads - animalsLoaded) - (numDead + scarti);
+    }
+
+    // Funzione che aggiorna il record principale e ricalcola "Ancora presenti"
+    async function autoUpdateFields() {
+      await autoUpdate();
+      updateAncoraPresenti();
+    }
+
+    // Funzione per aggiornare in tempo reale i campi derivati del form "Suinetti Venduti"
+    function updateNewSVDerivedFields() {
+      // Calcola il Peso Medio dei SV
+      const newSVNumero = parseFloat(document.getElementById('new_sv_numero').value) || 0;
+      const newSVPesoTotale = parseFloat(document.getElementById('new_sv_pesoTotale').value) || 0;
+      const newSVPesoMedioInput = document.getElementById('new_sv_pesoMedio');
+      if (newSVNumero > 0) {
+        newSVPesoMedioInput.value = (newSVPesoTotale / newSVNumero).toFixed(2);
+      } else {
+        newSVPesoMedioInput.value = "";
+      }
+      // Calcola i Giorni di Permanenza: differenza in giorni tra la data di ingresso principale e la data SV
+      const entryDateValue = document.getElementById('entryDate').value;
+      const newSVDate = document.getElementById('new_sv_date').value;
+      const newSVGiorniInput = document.getElementById('new_sv_giorni');
+      if (entryDateValue && newSVDate) {
+        const diffMs = new Date(newSVDate) - new Date(entryDateValue);
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        newSVGiorniInput.value = diffDays;
+      } else {
+        newSVGiorniInput.value = "";
+      }
+      // Calcola l'IPG automaticamente:
+      // Formula: ((Peso Medio SV - Peso Medio Ingresso) / Giorni di Permanenza) * 1000
+      const newSVPesoMedio = parseFloat(newSVPesoMedioInput.value) || 0;
+      const mainAvgWeight = parseFloat(document.getElementById('avgWeight').value) || 0;
+      const newSVGiorni = parseFloat(newSVGiorniInput.value) || 0;
+      const newSVIpgInput = document.getElementById('new_sv_ipg');
+      if (newSVGiorni > 0) {
+        const ipg = ((newSVPesoMedio - mainAvgWeight) / newSVGiorni) * 1000;
+        newSVIpgInput.value = ipg.toFixed(2);
+      } else {
+        newSVIpgInput.value = "";
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const docId = params.get('docId');
+      if (!docId) {
+        document.getElementById('content').textContent = "Nessun record selezionato.";
+        return;
+      }
+      try {
+        const docRef = doc(db, "lotti", docId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          document.title = data.client;
+          document.getElementById('clientName').textContent = data.client;
+          document.getElementById('client').value = data.client || '';
+          document.getElementById('lotNumber').value = data.lotNumber || '';
+          document.getElementById('entryDate').value = data.entryDate || '';
+          document.getElementById('presuntoCarico').value = (data.presuntoCarico && data.presuntoCarico !== "undefined") ? data.presuntoCarico : '';
+          document.getElementById('totalWeight').value = data.totalWeight || '';
+          document.getElementById('numHeads').value = data.numHeads || '';
+          document.getElementById('numDead').value = data.numDead || '';
+          document.getElementById('deadPercent').value = data.deadPercent || '';
+          document.getElementById('sector').value = data.sector || '';
+          document.getElementById('lettera').value = data.lettera || '';
+          document.getElementById('avgWeight').value = data.avgWeight || '';
+          document.getElementById('animalsLoaded').value = data.animalsLoaded || 0;
+          document.getElementById('totalWeightCarico').value = data.totalWeightCarico || 0;
+          document.getElementById('avgWeightCarico').value = data.avgWeightCarico || 0;
+          document.getElementById('scarti').value = data.scarti || 0;
+          // Calcola "Ancora presenti": (N.° capi – Animali caricati) – (N.° morti + Scarti)
+          document.getElementById('present').value = (data.numHeads || 0) - ((data.animalsLoaded || 0) + (data.numDead || 0) + (data.scarti || 0));
+          recalcDeadPercent();
+        } else {
+          document.getElementById('content').textContent = "Record non trovato.";
+        }
+      } catch (error) {
+        document.getElementById('content').textContent = "Errore durante il recupero del record: " + error.message;
+      }
+      
+      // Aggiungi listener "blur" per ogni input (eccetto deadPercent)
+      const inputs = document.querySelectorAll('#editForm input');
+      inputs.forEach(input => {
+        if (input.id !== "deadPercent") {
+          input.addEventListener('blur', autoUpdateFields);
+        }
+      });
+      
+      // Sincronizza "Animali caricati" con "N.° capi" e aggiorna "Ancora presenti"
+      const numHeadsEl = document.getElementById('numHeads');
+      if (numHeadsEl) {
+        numHeadsEl.addEventListener('input', function() {
+          const animalsLoadedEl = document.getElementById('animalsLoaded');
+          if (animalsLoadedEl) {
+            animalsLoadedEl.value = this.value;
+          }
+          updateAvgWeightCarico();
+          updateAncoraPresenti();
+        });
+      }
+      // Sincronizza "Peso totale carico" con "Peso totale (kg)"
+      const totalWeightEl = document.getElementById('totalWeight');
+      if (totalWeightEl) {
+        totalWeightEl.addEventListener('input', function() {
+          const totalWeightCaricoEl = document.getElementById('totalWeightCarico');
+          if (totalWeightCaricoEl) {
+            totalWeightCaricoEl.value = this.value;
+          }
+          updateAvgWeightCarico();
+        });
+      }
+      // Aggiungi listener per "numDead" e "scarti" per aggiornare "Ancora presenti"
+      const numDeadEl = document.getElementById('numDead');
+      if(numDeadEl) {
+        numDeadEl.addEventListener('input', updateAncoraPresenti);
+      }
+      const scartiEl = document.getElementById('scarti');
+      if(scartiEl) {
+        scartiEl.addEventListener('input', updateAncoraPresenti);
+      }
+      // Per i campi del form "Suinetti Venduti": aggiungo i listener per aggiornare in tempo reale i dati derivati
+      const newSvNumeroEl = document.getElementById('new_sv_numero');
+      if(newSvNumeroEl) newSvNumeroEl.addEventListener('input', updateNewSVDerivedFields);
+      const newSvPesoTotaleEl = document.getElementById('new_sv_pesoTotale');
+      if(newSvPesoTotaleEl) newSvPesoTotaleEl.addEventListener('input', updateNewSVDerivedFields);
+      const newSvDateEl = document.getElementById('new_sv_date');
+      if(newSvDateEl) newSvDateEl.addEventListener('input', updateNewSVDerivedFields);
+      
+      // Salva il docId principale per la subcollezione
+      mainDocId = docId;
+      
+      // Carica i record della subcollezione "suinettiVenduti"
+      loadSuinettiVenduti();
+    });
+
+    // Funzione per tornare alla pagina iniziale
+    window.goBack = function() {
+      window.location.href = "index.html";
+    };
+
+    // -----------------------------
+    // FUNZIONI PER LA SEZIONE "SUINETTI VENDUTI"
+    // -----------------------------
+    let mainDocId = null; // memorizza il docId del record principale
+
+    async function addSVRow() {
+      try {
+        const svCol = collection(db, "lotti", mainDocId, "suinettiVenduti");
+        const sv_client = document.getElementById('new_sv_client').value;
+        const sv_date = document.getElementById('new_sv_date').value;
+        const sv_numero = parseInt(document.getElementById('new_sv_numero').value) || 0;
+        const sv_pesoTotale = parseFloat(document.getElementById('new_sv_pesoTotale').value) || 0;
+        let sv_pesoMedio = 0;
+        if (sv_numero > 0) {
+          sv_pesoMedio = parseFloat((sv_pesoTotale / sv_numero).toFixed(2));
+        }
+        // Calcola i giorni di permanenza come differenza in giorni tra la data ingresso principale e sv_date
+        const entryDateValue = document.getElementById('entryDate').value;
+        const diffDays = Math.floor((new Date(sv_date) - new Date(entryDateValue)) / (1000*60*60*24));
+        // Calcola l'IPG in base alla formula: ((sv_pesoMedio - avgWeight) / diffDays) * 1000
+        const mainAvgWeight = parseFloat(document.getElementById('avgWeight').value) || 0;
+        let sv_ipg = "";
+        if (diffDays > 0) {
+          sv_ipg = (((sv_pesoMedio - mainAvgWeight) / diffDays) * 1000).toFixed(2);
+        }
+        
+        const newSV = {
+          client: sv_client,
+          date: sv_date,
+          numero: sv_numero,
+          pesoTotale: sv_pesoTotale,
+          pesoMedio: sv_pesoMedio,
+          giorniPermanenza: diffDays,
+          ipg: sv_ipg
+        };
+        await addDoc(collection(db, "lotti", mainDocId, "suinettiVenduti"), newSV);
+        console.log("Nuova riga SV aggiunta");
+        document.getElementById('newSVForm').reset();
+        if(document.getElementById('new_sv_date')){
+          document.getElementById('new_sv_date').value = new Date().toISOString().substr(0,10);
+        }
+        updateMainFromSV();
+      } catch (error) {
+        alert("Errore nell'aggiunta della riga: " + error.message);
+      }
+    }
+
+    function loadSuinettiVenduti() {
+      if (!mainDocId) {
+        console.error("mainDocId è nullo. Impossibile caricare i Suinetti Venduti.");
+        return;
+      }
+      const svTableBody = document.querySelector('#suinettiTable tbody');
+      if (!svTableBody) {
+        console.error("Elemento tbody della tabella 'suinettiTable' non trovato.");
+        return;
+      }
+      // Ordina i record in ordine cronologico (ascendente) in base al campo "date"
+      const svCol = query(collection(db, "lotti", mainDocId, "suinettiVenduti"), orderBy("date", "asc"));
+      onSnapshot(svCol, (snapshot) => {
+        svTableBody.innerHTML = "";
+        let totalNumero = 0;
+        let totalPesoTotale = 0;
+        let sumGiorni = 0;
+        let sumIPG = 0;
+        let countRows = 0;
+        snapshot.forEach(docSnap => {
+          const svData = docSnap.data();
+          totalNumero += svData.numero || 0;
+          totalPesoTotale += svData.pesoTotale || 0;
+          if(svData.giorniPermanenza) { sumGiorni += svData.giorniPermanenza; }
+          if(svData.ipg) { sumIPG += parseFloat(svData.ipg); }
+          countRows++;
+          const svRow = document.createElement('tr');
+          svRow.setAttribute("data-id", docSnap.id);
+          svRow.innerHTML = `
+            <td>${svData.client || ""}</td>
+            <td>${svData.date ? formatDate(svData.date) : ""}</td>
+            <td>${svData.numero || ""}</td>
+            <td>${svData.pesoTotale ? svData.pesoTotale.toFixed(2) : ""}</td>
+            <td>${svData.pesoMedio ? svData.pesoMedio.toFixed(2) : ""}</td>
+            <td>${svData.giorniPermanenza || ""}</td>
+            <td>${svData.ipg || ""}</td>
+            <td>
+              <button class="btn" onclick="editSVRowInline('${docSnap.id}')">Modifica</button>
+              <button class="btn" onclick="deleteSVRow('${docSnap.id}')">Elimina</button>
+            </td>
+          `;
+          svTableBody.appendChild(svRow);
+        });
+        const overallPesoMedio = totalNumero > 0 ? (totalPesoTotale / totalNumero) : 0;
+        const avgGiorni = countRows > 0 ? (sumGiorni / countRows) : 0;
+        const avgIPG = countRows > 0 ? (sumIPG / countRows) : 0;
+        // Aggiorna il tfoot
+        document.getElementById('sv_total_numero').textContent = totalNumero;
+        document.getElementById('sv_total_pesoTotale').textContent = totalPesoTotale.toFixed(2);
+        document.getElementById('sv_total_pesoMedio').textContent = totalNumero > 0 ? overallPesoMedio.toFixed(2) : "-";
+        document.getElementById('sv_total_giorni').textContent = countRows > 0 ? avgGiorni.toFixed(2) : "0";
+        document.getElementById('sv_total_ipg').textContent = countRows > 0 ? avgIPG.toFixed(2) : "-";
+        updateMainFromSV();
+      });
+    }
+
+    function editSVRowInline(svDocId) {
+      const row = document.querySelector(`#suinettiTable tr[data-id="${svDocId}"]`);
+      if (!row) return;
+      const cells = row.querySelectorAll('td');
+      const currentValues = {
+        client: cells[0].textContent,
+        date: cells[1].textContent,
+        numero: cells[2].textContent,
+        pesoTotale: cells[3].textContent,
+        pesoMedio: cells[4].textContent,
+        giorniPermanenza: cells[5].textContent,
+        ipg: cells[6].textContent
+      };
+      const dateValue = currentValues.date && currentValues.date !== "undefined" ? currentValues.date : "";
+      cells[0].innerHTML = `<input type="text" id="edit_sv_client" value="${currentValues.client}">`;
+      cells[1].innerHTML = `<input type="date" id="edit_sv_date" value="${dateValue}">`;
+      cells[2].innerHTML = `<input type="number" id="edit_sv_numero" value="${currentValues.numero}">`;
+      cells[3].innerHTML = `<input type="number" step="0.01" id="edit_sv_pesoTotale" value="${currentValues.pesoTotale ? parseFloat(currentValues.pesoTotale).toFixed(2) : ""}">`;
+      cells[4].innerHTML = `<input type="number" step="0.01" id="edit_sv_pesoMedio" value="${currentValues.pesoMedio}" readonly>`;
+      cells[5].innerHTML = `<input type="number" id="edit_sv_giorni" value="${currentValues.giorniPermanenza}" readonly>`;
+      cells[6].innerHTML = `<input type="text" id="edit_sv_ipg" value="${currentValues.ipg}" readonly>`;
+      const numeroInput = document.getElementById('edit_sv_numero');
+      const pesoTotaleInput = document.getElementById('edit_sv_pesoTotale');
+      const pesoMedioInput = document.getElementById('edit_sv_pesoMedio');
+      const dateInput = document.getElementById('edit_sv_date');
+      const giorniInput = document.getElementById('edit_sv_giorni');
+      const ipgInput = document.getElementById('edit_sv_ipg');
+      function updatePesoMedio() {
+        const num = parseFloat(numeroInput.value);
+        const pesoTot = parseFloat(pesoTotaleInput.value);
+        if (!isNaN(num) && num > 0 && !isNaN(pesoTot)) {
+          pesoMedioInput.value = (pesoTot / num).toFixed(2);
+        } else {
+          pesoMedioInput.value = "";
+        }
+      }
+      if (numeroInput) numeroInput.addEventListener('input', updatePesoMedio);
+      if (pesoTotaleInput) pesoTotaleInput.addEventListener('input', updatePesoMedio);
+      function updateEditSVGiorni() {
+        const mainEntryDate = document.getElementById('entryDate').value;
+        const editDate = dateInput.value;
+        if(mainEntryDate && editDate) {
+          const diff = Math.floor((new Date(editDate) - new Date(mainEntryDate))/(1000*60*60*24));
+          giorniInput.value = diff;
+          const currentPesoMedio = parseFloat(pesoMedioInput.value) || 0;
+          const mainAvgWeight = parseFloat(document.getElementById('avgWeight').value) || 0;
+          if(diff > 0) {
+            ipgInput.value = (((currentPesoMedio - mainAvgWeight) / diff) * 1000).toFixed(2);
+          } else {
+            ipgInput.value = "";
+          }
+        } else {
+          giorniInput.value = "";
+          ipgInput.value = "";
+        }
+      }
+      if (dateInput) {
+        dateInput.addEventListener('change', updateEditSVGiorni);
+        updateEditSVGiorni();
+      }
+      cells[7].innerHTML = `
+        <button class="btn" onclick="saveSVRowInline('${svDocId}')">Salva</button>
+        <button class="btn" onclick="cancelSVRowEdit('${svDocId}', '${currentValues.client}', '${currentValues.date}', '${currentValues.numero}', '${currentValues.pesoTotale}', '${currentValues.pesoMedio}', '${currentValues.giorniPermanenza}', '${currentValues.ipg}')">Annulla</button>
+      `;
+    }
+
+    async function saveSVRowInline(svDocId) {
+      const row = document.querySelector(`#suinettiTable tr[data-id="${svDocId}"]`);
+      if (!row) return;
+      const updatedSV = {
+        client: row.querySelector('#edit_sv_client').value,
+        date: row.querySelector('#edit_sv_date').value,
+        numero: parseInt(row.querySelector('#edit_sv_numero').value) || 0,
+        pesoTotale: parseFloat(row.querySelector('#edit_sv_pesoTotale').value) || 0,
+        pesoMedio: parseFloat(row.querySelector('#edit_sv_pesoMedio').value) || 0,
+        giorniPermanenza: Math.floor((new Date(row.querySelector('#edit_sv_date').value) - new Date(document.getElementById('entryDate').value))/(1000*60*60*24)),
+        ipg: row.querySelector('#edit_sv_ipg').value
+      };
+      try {
+        await updateDoc(doc(db, "lotti", mainDocId, "suinettiVenduti", svDocId), updatedSV);
+        console.log("Record SV aggiornato in linea");
+      } catch (error) {
+        alert("Errore durante l'aggiornamento: " + error.message);
+      }
+    }
+
+    function cancelSVRowEdit(svDocId, origClient, origDate, origNumero, origPesoTotale, origPesoMedio, origGiorni, origIPG) {
+      const row = document.querySelector(`#suinettiTable tr[data-id="${svDocId}"]`);
+      if (!row) return;
+      row.innerHTML = `
+        <td>${origClient}</td>
+        <td>${origDate}</td>
+        <td>${origNumero}</td>
+        <td>${parseFloat(origPesoTotale).toFixed(2)}</td>
+        <td>${parseFloat(origPesoMedio).toFixed(2)}</td>
+        <td>${origGiorni}</td>
+        <td>${origIPG}</td>
+        <td>
+          <button class="btn" onclick="editSVRowInline('${svDocId}')">Modifica</button>
+          <button class="btn" onclick="deleteSVRow('${svDocId}')">Elimina</button>
+        </td>
+      `;
+    }
+
+    async function deleteSVRow(svDocId) {
+      if (confirm("Sei sicuro di voler eliminare questo record di suinetti venduti?")) {
+        try {
+          await deleteDoc(doc(db, "lotti", mainDocId, "suinettiVenduti", svDocId));
+          console.log("Record SV eliminato");
+        } catch (error) {
+          alert("Errore durante l'eliminazione: " + error.message);
+        }
+      }
+    }
+
+    // Aggiorna i dati del record principale in base alla subcollezione "Suinetti Venduti" e aggiorna anche il tfoot
+    function updateMainFromSV() {
+      const svCol = collection(db, "lotti", mainDocId, "suinettiVenduti");
+      let totalSVNumero = 0;
+      let totalSVPesoTotale = 0;
+      let sumGiorni = 0;
+      let sumIPG = 0;
+      let countRows = 0;
+      onSnapshot(svCol, (snapshot) => {
+        totalSVNumero = 0;
+        totalSVPesoTotale = 0;
+        sumGiorni = 0;
+        sumIPG = 0;
+        countRows = 0;
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          totalSVNumero += data.numero || 0;
+          totalSVPesoTotale += data.pesoTotale || 0;
+          if(data.giorniPermanenza) sumGiorni += data.giorniPermanenza;
+          if(data.ipg) sumIPG += parseFloat(data.ipg);
+          countRows++;
+        });
+        const overallPesoMedio = totalSVNumero > 0 ? (totalSVPesoTotale / totalSVNumero) : 0;
+        const avgGiorni = countRows > 0 ? (sumGiorni / countRows) : 0;
+        const avgIPG = countRows > 0 ? (sumIPG / countRows) : 0;
+        // Aggiorna i campi del form principale
+        const animalsLoadedEl = document.getElementById('animalsLoaded');
+        if (animalsLoadedEl) animalsLoadedEl.value = totalSVNumero;
+        const totalWeightCaricoEl = document.getElementById('totalWeightCarico');
+        if (totalWeightCaricoEl) totalWeightCaricoEl.value = totalSVPesoTotale.toFixed(2);
+        updateAvgWeightCarico();
+        updateAncoraPresenti();
+        autoUpdate();
+        // Aggiorna il footer della tabella "Suinetti Venduti"
+        document.getElementById('sv_total_numero').textContent = totalSVNumero;
+        document.getElementById('sv_total_pesoTotale').textContent = totalSVPesoTotale.toFixed(2);
+        document.getElementById('sv_total_pesoMedio').textContent = totalSVNumero > 0 ? overallPesoMedio.toFixed(2) : "-";
+        document.getElementById('sv_total_giorni').textContent = countRows > 0 ? avgGiorni.toFixed(2) : "0";
+        document.getElementById('sv_total_ipg').textContent = countRows > 0 ? avgIPG.toFixed(2) : "-";
+      });
+    }
+
+    // Esponi le funzioni globali per l'HTML
+    window.goBack = function() {
+      window.location.href = "index.html";
+    };
+    window.addSVRow = addSVRow;
+    window.editSVRowInline = editSVRowInline;
+    window.saveSVRowInline = saveSVRowInline;
+    window.cancelSVRowEdit = cancelSVRowEdit;
+    window.deleteSVRow = deleteSVRow;
+  </script>
+</head>
+<body>
+  <header>
+    <h1 id="clientName">Dettagli Cliente</h1>
+    <button class="btn" onclick="goBack()">Torna alla Pagina Iniziale</button>
+  </header>
+  <main id="content">
+    <!-- Form principale per il record (modifiche salvate automaticamente al blur) -->
+    <form id="editForm" class="edit-form">
+      <label>Cliente:
+        <input type="text" id="client" required>
+      </label>
+      <label>N.° Lotto:
+        <input type="text" id="lotNumber" required>
+      </label>
+      <label>Data ingresso:
+        <input type="date" id="entryDate" required>
+      </label>
+      <label>Data presunto carico:
+        <input type="date" id="presuntoCarico" required>
+      </label>
+      <label>Peso totale (kg):
+        <input type="number" id="totalWeight" step="0.1" required>
+      </label>
+      <label>N.° capi:
+        <input type="number" id="numHeads" required>
+      </label>
+      <label>N.° morti:
+        <input type="number" id="numDead" required>
+      </label>
+      <label>Percentuale morti (%):
+        <input type="number" id="deadPercent" step="0.1" readonly required>
+      </label>
+      <label>Settore:
+        <input type="text" id="sector" required>
+      </label>
+      <label>Lettera:
+        <input type="text" id="lettera" required>
+      </label>
+      <label>Peso medio (kg):
+        <input type="number" id="avgWeight" step="0.1" required>
+      </label>
+      <label>Animali caricati:
+        <input type="number" id="animalsLoaded" required readonly>
+      </label>
+      <label>Peso totale carico (kg):
+        <input type="number" id="totalWeightCarico" step="0.1" required readonly>
+      </label>
+      <label>Peso/Capo carico (kg):
+        <input type="number" id="avgWeightCarico" step="0.1" required readonly>
+      </label>
+      <label>Scarti:
+        <input type="number" id="scarti" required>
+      </label>
+      <label>Ancora presenti:
+        <input type="number" id="present" required readonly>
+      </label>
+    </form>
+
+    <!-- Sezione "Suinetti Venduti" -->
+    <div class="sv-section">
+      <h2>Suinetti Venduti</h2>
+      <!-- Form per aggiungere una nuova riga -->
+      <form id="newSVForm" class="new-sv-form" onsubmit="event.preventDefault(); addSVRow();">
+        <label>Cliente:
+          <input type="text" id="new_sv_client" required>
+        </label>
+        <label>Data:
+          <input type="date" id="new_sv_date" required>
+        </label>
+        <label>Numero:
+          <input type="number" id="new_sv_numero" required>
+        </label>
+        <label>Peso Totale (Kg):
+          <input type="number" id="new_sv_pesoTotale" step="0.1" required>
+        </label>
+        <label>Peso Medio:
+          <input type="number" id="new_sv_pesoMedio" step="0.1" readonly>
+        </label>
+        <label>Giorni di Permanenza medi:
+          <input type="number" id="new_sv_giorni" readonly required>
+        </label>
+        <label>IPG:
+          <input type="text" id="new_sv_ipg" readonly required>
+        </label>
+        <button class="btn" type="submit">Aggiungi Riga</button>
+      </form>
+      <!-- Tabella per visualizzare i record della subcollezione "suinettiVenduti" -->
+      <table id="suinettiTable" class="sv-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Numero</th>
+            <th>Peso Totale (Kg)</th>
+            <th>Peso Medio</th>
+            <th>Giorni di Permanenza medi</th>
+            <th>IPG</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Le righe verranno popolate dinamicamente -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Totali</td>
+            <td id="sv_total_numero">0</td>
+            <td id="sv_total_pesoTotale">0.00</td>
+            <td id="sv_total_pesoMedio">-</td>
+            <td id="sv_total_giorni">0</td>
+            <td id="sv_total_ipg">-</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </main>
+</body>
+</html>
