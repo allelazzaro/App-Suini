@@ -149,12 +149,25 @@
         width: 100%;
       }
     }
+
+<button class="btn" onclick="exportTableToExcel('suinettiTable', 'suinetti_venduti.xlsx')">Scarica Excel</button>
+
   </style>
   <script type="module">
     import { db } from "./firebase-config.js";
     import { 
       doc, getDoc, updateDoc, collection, addDoc, onSnapshot, deleteDoc, query, orderBy 
     } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().substr(0, 10);
+  const dateInputs = document.querySelectorAll('input[type="date"]');
+  dateInputs.forEach(input => {
+    if (!input.value) {
+      input.value = today;
+    }
+  });
+});
 
     // Funzione per formattare le date (gg/mm/aaaa)
     function formatDate(dateString) {
@@ -219,7 +232,7 @@
       }
     }
 
-    // Funzione per aggiornare il campo "Ancora presenti" come: (N.° capi – Animali caricati) – (N.° morti + Scarti)
+    // Funzione per aggiornare il campo "Ancora presenti": (N.° capi – Animali caricati) – (N.° morti + Scarti)
     function updateAncoraPresenti() {
       const numHeads = parseInt(document.getElementById('numHeads').value) || 0;
       const animalsLoaded = parseInt(document.getElementById('animalsLoaded').value) || 0;
@@ -350,7 +363,7 @@
       if(scartiEl) {
         scartiEl.addEventListener('input', updateAncoraPresenti);
       }
-      // Per i campi del form "Suinetti Venduti": aggiungo i listener per aggiornare in tempo reale i dati derivati
+      // Per i campi del form "Suinetti Venduti": aggiungi listener per aggiornare i dati derivati
       const newSvNumeroEl = document.getElementById('new_sv_numero');
       if(newSvNumeroEl) newSvNumeroEl.addEventListener('input', updateNewSVDerivedFields);
       const newSvPesoTotaleEl = document.getElementById('new_sv_pesoTotale');
@@ -386,10 +399,10 @@
         if (sv_numero > 0) {
           sv_pesoMedio = parseFloat((sv_pesoTotale / sv_numero).toFixed(2));
         }
-        // Calcola i giorni di permanenza come differenza in giorni tra la data ingresso principale e sv_date
+        // Calcola i giorni di permanenza come differenza tra data ingresso e sv_date
         const entryDateValue = document.getElementById('entryDate').value;
         const diffDays = Math.floor((new Date(sv_date) - new Date(entryDateValue)) / (1000*60*60*24));
-        // Calcola l'IPG in base alla formula: ((sv_pesoMedio - avgWeight) / diffDays) * 1000
+        // Calcola l'IPG: ((sv_pesoMedio - avgWeight) / diffDays) * 1000
         const mainAvgWeight = parseFloat(document.getElementById('avgWeight').value) || 0;
         let sv_ipg = "";
         if (diffDays > 0) {
@@ -424,7 +437,7 @@
       }
       const svTableBody = document.querySelector('#suinettiTable tbody');
       if (!svTableBody) {
-        console.error("Elemento tbody della tabella 'suinettiTable' non trovato.");
+        console.error("Elemento tbody della tabella 'suinettiVenduti' non trovato.");
         return;
       }
       // Ordina i record in ordine cronologico (ascendente) in base al campo "date"

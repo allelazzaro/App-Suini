@@ -1,4 +1,3 @@
-// script.js
 import { auth, db, storage } from "./firebase-config.js";
 import { 
   signInWithEmailAndPassword, 
@@ -214,9 +213,7 @@ function loadLotti(user) {
             <button class="open-page-btn">Apri Pagina</button>
           </td>
         `;
-        // Bottone Modifica
         row.querySelector('.edit-btn').addEventListener('click', () => { editRow(row, currentDocId); });
-        // Bottone Elimina
         row.querySelector('.delete-btn').addEventListener('click', () => {
           if (confirm("Sei sicuro di voler cancellare questo record?")) {
             deleteDoc(doc(db, "lotti", currentDocId))
@@ -224,7 +221,6 @@ function loadLotti(user) {
               .catch(error => { alert("Errore durante la cancellazione: " + error.message); });
           }
         });
-        // Bottone per upload foto
         row.querySelector('.photo-btn').addEventListener('click', () => {
           const fileInput = document.createElement('input');
           fileInput.type = 'file';
@@ -234,17 +230,13 @@ function loadLotti(user) {
           fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
-              console.log("File selezionato:", file);
               const storageRef = ref(storage, `lotti/${currentDocId}/photo.jpg`);
               try {
                 const snapshot = await uploadBytes(storageRef, file);
-                console.log("Upload completato:", snapshot);
                 const url = await getDownloadURL(snapshot.ref);
-                console.log("URL ottenuto:", url);
                 await updateDoc(doc(db, "lotti", currentDocId), { photoURL: url });
                 alert("Foto salvata con successo!");
               } catch (error) {
-                console.error("Errore upload/update foto:", error);
                 alert("Errore durante l'upload della foto: " + error.message);
               }
             }
@@ -253,7 +245,6 @@ function loadLotti(user) {
           fileInput.click();
           fileInput.remove();
         });
-        // Bottone per visualizzare la foto
         row.querySelector('.view-photo-btn').addEventListener('click', () => {
           if (data.photoURL && data.photoURL.trim() !== "") {
             showModal(data.photoURL);
@@ -261,7 +252,6 @@ function loadLotti(user) {
             alert("Nessuna foto disponibile per questo record.");
           }
         });
-        // Bottone "Apri Pagina": apre customer.html passando il docId
         row.querySelector('.open-page-btn').addEventListener('click', () => {
           window.open(`customer.html?docId=${encodeURIComponent(currentDocId)}`, "_blank");
         });
@@ -303,8 +293,17 @@ function applyFilters() {
   }
   updateTotals();
 }
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().substr(0, 10);
+  const dateInputs = document.querySelectorAll('input[type="date"]');
+  dateInputs.forEach(input => {
+    if (!input.value) {
+      input.value = today;
+    }
+  });
+});
 
-/* Funzione per aggiornare i totali (rimuovendo il totale dei "presenti") */
+/* Funzione per aggiornare i totali (senza aggiornare il totale "presenti") */
 function updateTotals() {
   let totalWeightTotal = 0;
   let totalHeadsTotal = 0;
@@ -339,7 +338,7 @@ function updateTotals() {
   document.getElementById('totalWeightCarico').textContent = totalWeightCarico.toFixed(2);
   document.getElementById('totalAvgWeightCarico').textContent = totalAvgWeightCarico.toFixed(2);
   document.getElementById('totalScarti').textContent = totalScarti;
-  // Non aggiorno il totale "presenti" perché è stato rimosso dall'HTML.
+  // Il totale "presenti" non viene aggiornato poiché rimosso dall'HTML.
 }
 
 /* Funzione di editing */
@@ -456,267 +455,3 @@ function editRow(row, docId) {
     });
   });
 }
-
-/* FUNZIONI PER LA SEZIONE "SUINETTI VENDUTI" */
-let mainDocId = null; // memorizza il docId del record principale
-
-async function addSVRow() {
-  try {
-    const svCol = collection(db, "lotti", mainDocId, "suinettiVenduti");
-    const sv_client = document.getElementById('new_sv_client').value;
-    const sv_date = document.getElementById('new_sv_date').value;
-    const sv_numero = parseInt(document.getElementById('new_sv_numero').value) || 0;
-    const sv_pesoTotale = parseFloat(document.getElementById('new_sv_pesoTotale').value) || 0;
-    let sv_pesoMedio = 0;
-    if (sv_numero > 0) {
-      sv_pesoMedio = parseFloat((sv_pesoTotale / sv_numero).toFixed(2));
-    }
-    // Calcola i giorni di permanenza (differenza in giorni tra data ingresso e sv_date)
-    const entryDateValue = document.getElementById('entryDate').value;
-    const diffDays = Math.floor((new Date(sv_date) - new Date(entryDateValue)) / (1000 * 60 * 60 * 24));
-    // Calcola l'IPG: ((sv_pesoMedio - avgWeight) / diffDays) * 1000
-    const mainAvgWeight = parseFloat(document.getElementById('avgWeight').value) || 0;
-    let sv_ipg = "";
-    if (diffDays > 0) {
-      sv_ipg = (((sv_pesoMedio - mainAvgWeight) / diffDays) * 1000).toFixed(2);
-    }
-    
-    const newSV = {
-      client: sv_client,
-      date: sv_date,
-      numero: sv_numero,
-      pesoTotale: sv_pesoTotale,
-      pesoMedio: sv_pesoMedio,
-      giorniPermanenza: diffDays,
-      ipg: sv_ipg
-    };
-    await addDoc(svCol, newSV);
-    console.log("Nuova riga SV aggiunta");
-    document.getElementById('newSVForm').reset();
-    if(document.getElementById('new_sv_date')){
-      document.getElementById('new_sv_date').value = new Date().toISOString().substr(0,10);
-    }
-    updateMainFromSV();
-  } catch (error) {
-    alert("Errore nell'aggiunta della riga: " + error.message);
-  }
-}
-
-function loadSuinettiVenduti() {
-  if (!mainDocId) {
-    console.error("mainDocId è nullo. Impossibile caricare i Suinetti Venduti.");
-    return;
-  }
-  const svTableBody = document.querySelector('#suinettiTable tbody');
-  if (!svTableBody) {
-    console.error("Elemento tbody della tabella 'suinettiVenduti' non trovato.");
-    return;
-  }
-  const svCol = collection(db, "lotti", mainDocId, "suinettiVenduti");
-  onSnapshot(svCol, (snapshot) => {
-    svTableBody.innerHTML = "";
-    let totalNumero = 0;
-    let totalPesoTotale = 0;
-    let sumGiorni = 0;
-    let sumIPG = 0;
-    let countRows = 0;
-    snapshot.forEach(docSnap => {
-      const svData = docSnap.data();
-      totalNumero += svData.numero || 0;
-      totalPesoTotale += svData.pesoTotale || 0;
-      if(svData.giorniPermanenza) { sumGiorni += svData.giorniPermanenza; }
-      if(svData.ipg) { sumIPG += parseFloat(svData.ipg); }
-      countRows++;
-      const svRow = document.createElement('tr');
-      svRow.setAttribute("data-id", docSnap.id);
-      svRow.innerHTML = `
-        <td>${svData.client || ""}</td>
-        <td>${svData.date || ""}</td>
-        <td>${svData.numero || ""}</td>
-        <td>${svData.pesoTotale ? svData.pesoTotale.toFixed(2) : ""}</td>
-        <td>${svData.pesoMedio ? svData.pesoMedio.toFixed(2) : ""}</td>
-        <td>${svData.giorniPermanenza || ""}</td>
-        <td>${svData.ipg || ""}</td>
-        <td>
-          <button class="btn" onclick="editSVRowInline('${docSnap.id}')">Modifica</button>
-          <button class="btn" onclick="deleteSVRow('${docSnap.id}')">Elimina</button>
-        </td>
-      `;
-      svTableBody.appendChild(svRow);
-    });
-    const overallPesoMedio = totalNumero > 0 ? (totalPesoTotale / totalNumero) : 0;
-    const avgGiorni = countRows > 0 ? (sumGiorni / countRows) : 0;
-    const avgIPG = countRows > 0 ? (sumIPG / countRows) : 0;
-    document.getElementById('sv_total_numero').textContent = totalNumero;
-    document.getElementById('sv_total_pesoTotale').textContent = totalPesoTotale.toFixed(2);
-    document.getElementById('sv_total_pesoMedio').textContent = totalNumero > 0 ? overallPesoMedio.toFixed(2) : "-";
-    document.getElementById('sv_total_giorni').textContent = countRows > 0 ? avgGiorni.toFixed(2) : "0";
-    document.getElementById('sv_total_ipg').textContent = countRows > 0 ? avgIPG.toFixed(2) : "-";
-    updateMainFromSV();
-  });
-}
-
-function editSVRowInline(svDocId) {
-  const row = document.querySelector(`#suinettiTable tr[data-id="${svDocId}"]`);
-  if (!row) return;
-  const cells = row.querySelectorAll('td');
-  const currentValues = {
-    client: cells[0].textContent,
-    date: cells[1].textContent,
-    numero: cells[2].textContent,
-    pesoTotale: cells[3].textContent,
-    pesoMedio: cells[4].textContent,
-    giorniPermanenza: cells[5].textContent,
-    ipg: cells[6].textContent
-  };
-  const dateValue = currentValues.date && currentValues.date !== "undefined" ? currentValues.date : "";
-  cells[0].innerHTML = `<input type="text" id="edit_sv_client" value="${currentValues.client}">`;
-  cells[1].innerHTML = `<input type="date" id="edit_sv_date" value="${dateValue}">`;
-  cells[2].innerHTML = `<input type="number" id="edit_sv_numero" value="${currentValues.numero}">`;
-  cells[3].innerHTML = `<input type="number" step="0.1" id="edit_sv_pesoTotale" value="${currentValues.pesoTotale}">`;
-  cells[4].innerHTML = `<input type="number" step="0.1" id="edit_sv_pesoMedio" value="${currentValues.pesoMedio}" readonly>`;
-  cells[5].innerHTML = `<input type="number" id="edit_sv_giorni" value="${currentValues.giorniPermanenza}" readonly>`;
-  cells[6].innerHTML = `<input type="text" id="edit_sv_ipg" value="${currentValues.ipg}" readonly>`;
-  const numeroInput = document.getElementById('edit_sv_numero');
-  const pesoTotaleInput = document.getElementById('edit_sv_pesoTotale');
-  const pesoMedioInput = document.getElementById('edit_sv_pesoMedio');
-  const dateInput = document.getElementById('edit_sv_date');
-  const giorniInput = document.getElementById('edit_sv_giorni');
-  const ipgInput = document.getElementById('edit_sv_ipg');
-  function updatePesoMedio() {
-    const num = parseFloat(numeroInput.value);
-    const pesoTot = parseFloat(pesoTotaleInput.value);
-    if (!isNaN(num) && num > 0 && !isNaN(pesoTot)) {
-      pesoMedioInput.value = (pesoTot / num).toFixed(2);
-    } else {
-      pesoMedioInput.value = "";
-    }
-  }
-  if (numeroInput) numeroInput.addEventListener('input', updatePesoMedio);
-  if (pesoTotaleInput) pesoTotaleInput.addEventListener('input', updatePesoMedio);
-  function updateEditSVGiorni() {
-    const mainEntryDate = document.getElementById('entryDate').value;
-    const editDate = dateInput.value;
-    if(mainEntryDate && editDate) {
-      const diff = Math.floor((new Date(editDate) - new Date(mainEntryDate))/(1000*60*60*24));
-      giorniInput.value = diff;
-      const currentPesoMedio = parseFloat(pesoMedioInput.value) || 0;
-      const mainAvgWeight = parseFloat(document.getElementById('avgWeight').value) || 0;
-      if(diff > 0) {
-        ipgInput.value = (((currentPesoMedio - mainAvgWeight) / diff) * 1000).toFixed(2);
-      } else {
-        ipgInput.value = "";
-      }
-    } else {
-      giorniInput.value = "";
-      ipgInput.value = "";
-    }
-  }
-  if (dateInput) {
-    dateInput.addEventListener('change', updateEditSVGiorni);
-    updateEditSVGiorni();
-  }
-  cells[7].innerHTML = `
-    <button class="btn" onclick="saveSVRowInline('${svDocId}')">Salva</button>
-    <button class="btn" onclick="cancelSVRowEdit('${svDocId}', '${currentValues.client}', '${currentValues.date}', '${currentValues.numero}', '${currentValues.pesoTotale}', '${currentValues.pesoMedio}', '${currentValues.giorniPermanenza}', '${currentValues.ipg}')">Annulla</button>
-  `;
-}
-
-async function saveSVRowInline(svDocId) {
-  const row = document.querySelector(`#suinettiTable tr[data-id="${svDocId}"]`);
-  if (!row) return;
-  const updatedSV = {
-    client: row.querySelector('#edit_sv_client').value,
-    date: row.querySelector('#edit_sv_date').value,
-    numero: parseInt(row.querySelector('#edit_sv_numero').value) || 0,
-    pesoTotale: parseFloat(row.querySelector('#edit_sv_pesoTotale').value) || 0,
-    pesoMedio: parseFloat(row.querySelector('#edit_sv_pesoMedio').value) || 0,
-    giorniPermanenza: Math.floor((new Date(row.querySelector('#edit_sv_date').value) - new Date(document.getElementById('entryDate').value))/(1000*60*60*24)),
-    ipg: row.querySelector('#edit_sv_ipg').value
-  };
-  try {
-    await updateDoc(doc(db, "lotti", mainDocId, "suinettiVenduti", svDocId), updatedSV);
-    console.log("Record SV aggiornato in linea");
-  } catch (error) {
-    alert("Errore durante l'aggiornamento: " + error.message);
-  }
-}
-
-function cancelSVRowEdit(svDocId, origClient, origDate, origNumero, origPesoTotale, origPesoMedio, origGiorni, origIPG) {
-  const row = document.querySelector(`#suinettiTable tr[data-id="${svDocId}"]`);
-  if (!row) return;
-  row.innerHTML = `
-    <td>${origClient}</td>
-    <td>${origDate}</td>
-    <td>${origNumero}</td>
-    <td>${parseFloat(origPesoTotale).toFixed(2)}</td>
-    <td>${parseFloat(origPesoMedio).toFixed(2)}</td>
-    <td>${origGiorni}</td>
-    <td>${origIPG}</td>
-    <td>
-      <button class="btn" onclick="editSVRowInline('${svDocId}')">Modifica</button>
-      <button class="btn" onclick="deleteSVRow('${svDocId}')">Elimina</button>
-    </td>
-  `;
-}
-
-async function deleteSVRow(svDocId) {
-  if (confirm("Sei sicuro di voler eliminare questo record di suinetti venduti?")) {
-    try {
-      await deleteDoc(doc(db, "lotti", mainDocId, "suinettiVenduti", svDocId));
-      console.log("Record SV eliminato");
-    } catch (error) {
-      alert("Errore durante l'eliminazione: " + error.message);
-    }
-  }
-}
-
-// Aggiorna i dati del record principale in base alla subcollezione "Suinetti Venduti"
-function updateMainFromSV() {
-  const svCol = collection(db, "lotti", mainDocId, "suinettiVenduti");
-  let totalSVNumero = 0;
-  let totalSVPesoTotale = 0;
-  let sumGiorni = 0;
-  let sumIPG = 0;
-  let countRows = 0;
-  onSnapshot(svCol, (snapshot) => {
-    totalSVNumero = 0;
-    totalSVPesoTotale = 0;
-    sumGiorni = 0;
-    sumIPG = 0;
-    countRows = 0;
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      totalSVNumero += data.numero || 0;
-      totalSVPesoTotale += data.pesoTotale || 0;
-      if(data.giorniPermanenza) sumGiorni += data.giorniPermanenza;
-      if(data.ipg) sumIPG += parseFloat(data.ipg);
-      countRows++;
-    });
-    const overallPesoMedio = totalSVNumero > 0 ? (totalSVPesoTotale / totalSVNumero) : 0;
-    const avgGiorni = countRows > 0 ? (sumGiorni / countRows) : 0;
-    const avgIPG = countRows > 0 ? (sumIPG / countRows) : 0;
-    const animalsLoadedEl = document.getElementById('animalsLoaded');
-    if (animalsLoadedEl) animalsLoadedEl.value = totalSVNumero;
-    const totalWeightCaricoEl = document.getElementById('totalWeightCarico');
-    if (totalWeightCaricoEl) totalWeightCaricoEl.value = totalSVPesoTotale.toFixed(2);
-    updateAvgWeightCarico();
-    updateTotals();
-    document.getElementById('sv_total_numero').textContent = totalSVNumero;
-    document.getElementById('sv_total_pesoTotale').textContent = totalSVPesoTotale.toFixed(2);
-    document.getElementById('sv_total_pesoMedio').textContent = totalSVNumero > 0 ? overallPesoMedio.toFixed(2) : "-";
-    document.getElementById('sv_total_giorni').textContent = countRows > 0 ? avgGiorni.toFixed(2) : "0";
-    document.getElementById('sv_total_ipg').textContent = countRows > 0 ? avgIPG.toFixed(2) : "-";
-    updateTotals();
-  });
-}
-
-// Esponi le funzioni globali per l'HTML (necessario per essere richiamate da attributi inline)
-window.goBack = function() {
-  window.location.href = "index.html";
-};
-window.addSVRow = addSVRow;
-window.editSVRowInline = editSVRowInline;
-window.saveSVRowInline = saveSVRowInline;
-window.cancelSVRowEdit = cancelSVRowEdit;
-window.deleteSVRow = deleteSVRow;

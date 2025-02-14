@@ -1,4 +1,3 @@
-// firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -9,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBe0kFne8vQpdpbJjsQtDV4jOpIVSHPM-s",
   authDomain: "app-suini.firebaseapp.com",
   projectId: "app-suini",
-  storageBucket: "app-suini.firebasestorage.app",
+  storageBucket: "app-suini.appspot.com", // Corretto: il bucket ha il formato "nome-progetto.appspot.com"
   messagingSenderId: "374795811050",
   appId: "1:374795811050:web:b161b1155939dad4c7ff93",
   measurementId: "G-D43TX2BS3F"
