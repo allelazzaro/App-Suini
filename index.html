@@ -6,7 +6,12 @@
   <title>Soccide Progeo</title>
   <!-- Link al Manifest per la PWA -->
   <link rel="manifest" href="manifest.json">
+  <!-- Google Fonts per un look moderno -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+<script type="module" src="script.js"></script>
+
 </head>
 <body>
   <!-- Sezione Login/Registrazione -->
@@ -89,70 +94,75 @@
           <button type="submit">Conferma dati</button>
         </div>
       </form>
+
       
-      <!-- Tabella dei lotti con filtri e riga dei totali -->
-      <table id="lotTable">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>N.° Lotto</th>
-            <th>Data ingresso</th>
-            <th>Data presunto carico</th>
-            <th>Peso totale (kg)</th>
-            <th>N.° capi</th>
-            <th>N.° morti</th>
-            <th>% morti</th>
-            <th>Settore</th>
-            <th>Lettera</th>
-            <th>Peso medio (kg)</th>
-            <th>Animali caricati</th>
-            <th>Peso totale carico (kg)</th>
-            <th>Peso/capo carico (kg)</th>
-            <th>Scarti</th>
-            <th>Presenti</th>
-            <th>Azioni</th>
-          </tr>
-          <tr class="filter-row">
-            <th><input type="text" class="filter-input" data-column="0" placeholder="Filtra cliente"></th>
-            <th><input type="text" class="filter-input" data-column="1" placeholder="Filtra lotto"></th>
-            <th><input type="text" class="filter-input" data-column="2" placeholder="Filtra data ingresso"></th>
-            <th><input type="text" class="filter-input" data-column="3" placeholder="Filtra data carico"></th>
-            <th><input type="text" class="filter-input" data-column="4" placeholder="Filtra peso totale"></th>
-            <th><input type="text" class="filter-input" data-column="5" placeholder="Filtra capi"></th>
-            <th><input type="text" class="filter-input" data-column="6" placeholder="Filtra morti"></th>
-            <th><input type="text" class="filter-input" data-column="7" placeholder="Filtra % morti"></th>
-            <th><input type="text" class="filter-input" data-column="8" placeholder="Filtra settore"></th>
-            <th><input type="text" class="filter-input" data-column="9" placeholder="Filtra lettera"></th>
-            <th><input type="text" class="filter-input" data-column="10" placeholder="Filtra peso medio"></th>
-            <th><input type="text" class="filter-input" data-column="11" placeholder="Filtra animali caricati"></th>
-            <th><input type="text" class="filter-input" data-column="12" placeholder="Filtra peso totale carico"></th>
-            <th><input type="text" class="filter-input" data-column="13" placeholder="Filtra peso/capo"></th>
-            <th><input type="text" class="filter-input" data-column="14" placeholder="Filtra scarti"></th>
-            <th><input type="text" class="filter-input" data-column="15" placeholder="Filtra presenti"></th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- I dati verranno caricati da Firestore -->
-        </tbody>
-        <tfoot>
-          <tr id="totalsRow">
-            <td colspan="2">Totale</td>
-            <td colspan="2"></td>
-            <td id="totalWeightTotal"></td>
-            <td id="totalHeadsTotal"></td>
-            <td id="totalDeadTotal"></td>
-            <td id="totalDeadPercent"></td>
-            <td colspan="2"></td>
-            <td id="totalAvgWeight"></td>
-            <td id="totalAnimalsLoaded"></td>
-            <td id="totalWeightCarico"></td>
-            <td id="totalAvgWeightCarico"></td>
-            <td id="totalScarti"></td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
+      <!-- Contenitore scrollabile per la tabella -->
+      <div class="table-container">
+        <table id="lotTable">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>N.° Lotto</th>
+              <th>Data ingresso</th>
+              <th>Data presunto carico</th>
+              <th>Peso totale (kg)</th>
+              <th>N.° capi</th>
+              <th>N.° morti</th>
+              <th>% morti</th>
+              <th>Settore</th>
+              <th>Lettera</th>
+              <th>Peso medio (kg)</th>
+              <th>Animali caricati</th>
+              <th>Peso totale carico (kg)</th>
+              <th>Peso/capo carico (kg)</th>
+              <th>Scarti</th>
+              <th>Presenti</th>
+              <th>Azioni</th>
+            </tr>
+            <tr class="filter-row">
+              <th><input type="text" class="filter-input" data-column="0" placeholder="Filtra cliente"></th>
+              <th><input type="text" class="filter-input" data-column="1" placeholder="Filtra lotto"></th>
+              <th><input type="text" class="filter-input" data-column="2" placeholder="Filtra data ingresso"></th>
+              <th><input type="text" class="filter-input" data-column="3" placeholder="Filtra data carico"></th>
+              <th><input type="text" class="filter-input" data-column="4" placeholder="Filtra peso totale"></th>
+              <th><input type="text" class="filter-input" data-column="5" placeholder="Filtra capi"></th>
+              <th><input type="text" class="filter-input" data-column="6" placeholder="Filtra morti"></th>
+              <th><input type="text" class="filter-input" data-column="7" placeholder="Filtra % morti"></th>
+              <th><input type="text" class="filter-input" data-column="8" placeholder="Filtra settore"></th>
+              <th><input type="text" class="filter-input" data-column="9" placeholder="Filtra lettera"></th>
+              <th><input type="text" class="filter-input" data-column="10" placeholder="Filtra peso medio"></th>
+              <th><input type="text" class="filter-input" data-column="11" placeholder="Filtra animali caricati"></th>
+              <th><input type="text" class="filter-input" data-column="12" placeholder="Filtra peso totale carico"></th>
+              <th><input type="text" class="filter-input" data-column="13" placeholder="Filtra peso/capo"></th>
+              <th><input type="text" class="filter-input" data-column="14" placeholder="Filtra scarti"></th>
+              <th><input type="text" class="filter-input" data-column="15" placeholder="Filtra presenti"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- I dati verranno caricati da Firestore -->
+          </tbody>
+<button onclick="exportTableToExcel('lotTable', 'Tabella_Lotti.xlsx')">Scarica Excel</button>
+
+          <tfoot>
+            <tr id="totalsRow">
+              <td colspan="2">Totale</td>
+              <td colspan="2"></td>
+              <td id="totalWeightTotal"></td>
+              <td id="totalHeadsTotal"></td>
+              <td id="totalDeadTotal"></td>
+              <td id="totalDeadPercent"></td>
+              <td colspan="2"></td>
+              <td id="totalAvgWeight"></td>
+              <td id="totalAnimalsLoaded"></td>
+              <td id="totalWeightCarico"></td>
+              <td id="totalAvgWeightCarico"></td>
+              <td id="totalScarti"></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </section>
   </div>
 
@@ -162,6 +172,7 @@
     <img class="modal-content" id="modalImage">
   </div>
 
+  <!-- Script principale -->
   <script type="module" src="script.js"></script>
 </body>
 </html>

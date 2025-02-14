@@ -1,108 +1,142 @@
 /* styles.css */
 
+/* Impostazioni globali e font */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Roboto', Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f8f8f8;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
 }
 
+/* Header della sezione App */
 header {
-  background-color: #d35400;
-  color: white;
-  padding: 15px;
+  background: linear-gradient(90deg, #d35400, #e67e22);
+  color: #fff;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Container per il login/registrazione */
+#login-container {
+  max-width: 400px;
+  margin: 50px auto;
+  background-color: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   text-align: center;
 }
 
-#app-container, #login-container {
-  padding: 10px;
-  max-width: 100%;
-}
-
-form, table {
-  width: 100%;
-  box-sizing: border-box;
-}
-
+/* Stili per i form */
 form {
-  background-color: white;
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 15px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  margin: 15px 0;
 }
-
-.form-group {
-  margin-bottom: 10px;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-input[type="text"],
-input[type="date"],
-input[type="number"],
-input[type="email"],
-input[type="password"],
-select {
+form input[type="email"],
+form input[type="password"],
+form input[type="text"],
+form input[type="number"],
+form input[type="date"] {
   width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-  font-size: 1em;
-}
-
-button {
-  background-color: #d35400;
-  color: white;
-  border: none;
   padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  margin-top: 5px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
-
-button:hover {
+form button {
+  background-color: #d35400;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  margin: 8px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+form button:hover {
   background-color: #e67e22;
 }
 
-.camera-btn {
-  background: none;
+/* Container dell'App */
+#app-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  /* Se preferisci scroll orizzontale globale, rimuovi overflow:hidden. */
+  /* overflow: hidden; */
+}
+#app-container header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+}
+#app-container header h1 {
+  margin: 0;
+}
+#app-container header button {
+  padding: 8px 12px;
+  background-color: #c0392b;
   border: none;
-  font-size: 1.5em;
-  margin-left: 5px;
+  border-radius: 4px;
+  color: #fff;
   cursor: pointer;
+  transition: background 0.3s ease;
+}
+#app-container header button:hover {
+  background-color: #e74c3c;
 }
 
+/* Sezione Gestione Lotto */
+#lot-section {
+  padding: 20px;
+}
+#lot-section h2 {
+  margin-bottom: 20px;
+  color: #d35400;
+}
+
+/* Wrapper della tabella per lo scroll orizzontale */
+.table-container {
+  width: 100%;
+  overflow-x: auto; /* permette lo scroll orizzontale */
+  margin-top: 20px;
+}
+
+/* Stili per la tabella dei lotti */
 table {
+  width: 100%;
   border-collapse: collapse;
-  background-color: white;
-  margin-bottom: 15px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  /* min-width: 900px;  Se desideri una larghezza minima */
+}
+table thead {
+  background-color: #f39c12;
+  color: #fff;
+}
+table th,
+table td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+table tr:hover {
+  background-color: #f1f1f1;
 }
 
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+/* Stili per la riga dei filtri */
+.filter-row input {
+  width: 90%;
+  padding: 6px;
   font-size: 0.9em;
 }
 
-thead {
-  background-color: #f39c12;
-  color: white;
-}
-
-.filter-row input {
-  width: 90%;
-  padding: 4px;
-  font-size: 0.8em;
-}
-
-/* Modal styles */
+/* Stili per il Modal */
 .modal {
   display: none;
   position: fixed;
@@ -130,11 +164,14 @@ thead {
   cursor: pointer;
 }
 
-/* Responsive per dispositivi mobili */
+/* Responsive */
 @media (max-width: 600px) {
   body { font-size: 0.9em; }
-  header { padding: 10px; }
-  .form-group { margin-bottom: 8px; }
-  input, button { font-size: 0.9em; }
-  th, td { padding: 6px; }
+  header { padding: 15px; }
+  #login-container { margin: 30px auto; padding: 20px; }
+  #app-container { margin: 10px; }
+  table th,
+  table td {
+    padding: 8px;
+  }
 }

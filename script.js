@@ -455,3 +455,43 @@ function editRow(row, docId) {
     });
   });
 }
+// Funzione per esportare una tabella in Excel
+function exportTableToExcel(tableID, filename) {
+    const table = document.getElementById(tableID);
+    if (!table) {
+        alert("Tabella non trovata!");
+        return;
+    }
+
+    let tableData = [];
+    let headers = [];
+    
+    // Estrarre intestazioni
+    const headerCells = table.querySelectorAll("thead th");
+    headerCells.forEach(cell => headers.push(cell.innerText));
+    tableData.push(headers);
+
+    // Estrarre righe della tabella
+    const rows = table.querySelectorAll("tbody tr");
+    rows.forEach(row => {
+        let rowData = [];
+        row.querySelectorAll("td").forEach(cell => {
+            rowData.push(cell.innerText);
+        });
+        tableData.push(rowData);
+    });
+
+    // Creazione del foglio Excel
+    let wb = XLSX.utils.book_new();
+    let ws = XLSX.utils.aoa_to_sheet(tableData);
+    XLSX.utils.book_append_sheet(wb, ws, "Dati");
+
+    // Salvare il file Excel
+    XLSX.writeFile(wb, filename + ".xlsx");
+}
+
+// Caricare il file XLSX.js per l'esportazione
+const script = document.createElement("script");
+script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js";
+document.body.appendChild(script);
+window.exportTableToExcel = exportTableToExcel;
